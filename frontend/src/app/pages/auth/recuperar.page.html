@@ -1,0 +1,66 @@
+<!-- Backdrop: la página de login se ve detrás con blur -->
+<div class="rc-backdrop" (click)="cerrar()"></div>
+
+<!-- Modal -->
+<div class="rc-modal">
+  <div class="rc-modal__header">
+    <div>
+      <h1 class="rc-modal__title">
+        <i class="pi pi-key"></i> Recuperar contraseña
+      </h1>
+      <p class="rc-modal__sub">
+        Ingresa tu correo y número de documento para generar una contraseña temporal.
+      </p>
+    </div>
+    <button type="button" class="rc-modal__close" (click)="cerrar()">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  @if (passwordTemporal(); as p) {
+    <div class="rc-success">
+      <div class="rc-success__badge">
+        <i class="pi pi-check-circle"></i> Contraseña generada
+      </div>
+      <div class="rc-success__password">{{ p }}</div>
+      <div class="rc-success__hint">Cópiala, inicia sesión y cámbiala desde tu perfil.</div>
+      <button type="button" class="rc-success__btn" (click)="cerrar()">
+        <i class="pi pi-sign-in"></i> Ir a iniciar sesión
+      </button>
+    </div>
+  } @else {
+    <form [formGroup]="formulario" (ngSubmit)="enviar()" novalidate>
+      <div class="rc-field">
+        <label class="rc-field__label">Correo electrónico</label>
+        <input
+          type="email"
+          formControlName="email"
+          class="rc-field__input"
+          placeholder="ejemplo@correo.com"
+        />
+      </div>
+
+      <div class="rc-field">
+        <label class="rc-field__label">Número de documento</label>
+        <input
+          formControlName="numeroDocumento"
+          class="rc-field__input"
+          placeholder="Digite aquí"
+        />
+      </div>
+
+      <button type="submit" class="rc-btn" [disabled]="cargando()">
+        @if (cargando()) {
+          <i class="pi pi-spin pi-spinner"></i>
+        } @else {
+          <i class="pi pi-key"></i>
+        }
+        Generar contraseña
+      </button>
+
+      <button type="button" class="rc-back-link" (click)="cerrar()">
+        Volver a iniciar sesión
+      </button>
+    </form>
+  }
+</div>

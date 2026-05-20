@@ -1,0 +1,264 @@
+<div class="reg-split">
+  <!-- Sidebar izquierdo: stepper -->
+  <aside class="reg-sidebar">
+    <div class="reg-sidebar__brand">
+      <app-logo size="md" ariaLabel="ExperienZia" />
+    </div>
+
+    <nav class="reg-sidebar__nav">
+      @for (sec of secciones; track sec.id) {
+        <a
+          class="reg-step"
+          [class.active]="seccionActiva() === sec.id"
+          [class.done]="seccionCompleta(sec.id)"
+          (click)="seccionActiva.set(sec.id)"
+        >
+          <span class="reg-step__dot">
+            @if (seccionCompleta(sec.id)) {
+              <i class="pi pi-check"></i>
+            }
+          </span>
+          <div class="reg-step__body">
+            <i [class]="sec.icon" class="reg-step__icon"></i>
+            <span class="reg-step__label">{{ sec.label }}</span>
+          </div>
+        </a>
+      }
+    </nav>
+  </aside>
+
+  <!-- Lado derecho: formulario -->
+  <div class="reg-form-side">
+    <div class="reg-form-wrapper">
+      <!-- Logo (solo mobile, en desktop va en sidebar) -->
+      <div class="reg-form-logo flex justify-center">
+        <app-logo size="md" ariaLabel="ExperienZia" />
+      </div>
+
+      <h1 class="reg-title">REGISTRO</h1>
+
+      <form
+        [formGroup]="formulario"
+        (ngSubmit)="enviar()"
+        class="reg-form"
+        novalidate
+      >
+        <!-- Fila 1: Nombre · Correo · Celular -->
+        <div class="reg-row reg-row--3">
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> NOMBRES COMPLETOS DEL USUARIO</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-user reg-field__icon"></i>
+              <input
+                formControlName="nombre"
+                class="reg-field__input"
+                placeholder="Escriba aquí"
+                autocomplete="name"
+                (focus)="focusSeccion('identidad')"
+              />
+            </div>
+            @if (formulario.controls.nombre.touched && formulario.controls.nombre.invalid) {
+              @if (formulario.controls.nombre.errors?.['required'] || formulario.controls.nombre.errors?.['minlength']) {
+                <p class="reg-field__error">Mínimo 3 caracteres.</p>
+              } @else if (formulario.controls.nombre.errors?.['soloLetras']) {
+                <p class="reg-field__error">Solo se permiten letras y espacios.</p>
+              }
+            }
+          </div>
+
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> CORREO ELECTRÓNICO</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-envelope reg-field__icon"></i>
+              <input
+                type="email"
+                formControlName="email"
+                class="reg-field__input"
+                placeholder="Escriba aquí"
+                autocomplete="email"
+                (focus)="focusSeccion('contacto')"
+              />
+            </div>
+            @if (formulario.controls.email.touched && formulario.controls.email.invalid) {
+              <p class="reg-field__error">Correo no válido.</p>
+            }
+          </div>
+
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> NÚMERO DE CELULAR</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-phone reg-field__icon"></i>
+              <input
+                formControlName="telefono"
+                class="reg-field__input"
+                placeholder="10 dígitos"
+                inputmode="numeric"
+                maxlength="10"
+                autocomplete="tel"
+                (focus)="focusSeccion('telefono')"
+              />
+            </div>
+            @if (formulario.controls.telefono.touched && formulario.controls.telefono.invalid) {
+              @if (formulario.controls.telefono.errors?.['required']) {
+                <p class="reg-field__error">El celular es obligatorio.</p>
+              } @else if (formulario.controls.telefono.errors?.['soloNumeros']) {
+                <p class="reg-field__error">Solo números, sin espacios ni símbolos.</p>
+              } @else if (formulario.controls.telefono.errors?.['digitosMin'] || formulario.controls.telefono.errors?.['digitosMax']) {
+                <p class="reg-field__error">Debe tener exactamente 10 dígitos.</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Fila 2: Tipo doc · Número doc -->
+        <div class="reg-row reg-row--2" (focusin)="focusSeccion('documento')">
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> TIPO DE DOCUMENTO</label>
+            <div class="reg-field__input-wrap reg-field__input-wrap--select">
+              <i class="pi pi-id-card reg-field__icon"></i>
+              <p-select
+                formControlName="tipoDocumento"
+                [options]="tiposDocumento"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="reg-select"
+                placeholder="Cédula de Ciudadanía"
+                appendTo="body"
+              ></p-select>
+            </div>
+          </div>
+
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> NÚMERO DE DOCUMENTO</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-hashtag reg-field__icon"></i>
+              <input
+                formControlName="numeroDocumento"
+                class="reg-field__input"
+                placeholder="Solo números, máx. 10"
+                inputmode="numeric"
+                maxlength="10"
+                autocomplete="off"
+                (focus)="focusSeccion('documento')"
+              />
+            </div>
+            @if (formulario.controls.numeroDocumento.touched && formulario.controls.numeroDocumento.invalid) {
+              @if (formulario.controls.numeroDocumento.errors?.['required']) {
+                <p class="reg-field__error">El documento es obligatorio.</p>
+              } @else if (formulario.controls.numeroDocumento.errors?.['soloNumeros']) {
+                <p class="reg-field__error">Solo números.</p>
+              } @else if (formulario.controls.numeroDocumento.errors?.['digitosMin']) {
+                <p class="reg-field__error">Mínimo 4 dígitos.</p>
+              } @else if (formulario.controls.numeroDocumento.errors?.['digitosMax']) {
+                <p class="reg-field__error">Máximo 10 dígitos.</p>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- Fila 3: Contraseña · Confirmar -->
+        <div class="reg-row reg-row--2">
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> CONTRASEÑA</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-lock reg-field__icon"></i>
+              <input
+                [type]="mostrarPassword ? 'text' : 'password'"
+                formControlName="password"
+                class="reg-field__input"
+                placeholder="Escriba aquí"
+                autocomplete="new-password"
+                (focus)="focusSeccion('seguridad')"
+              />
+              <button type="button" class="reg-field__toggle" (click)="mostrarPassword = !mostrarPassword" tabindex="-1">
+                <i [class]="mostrarPassword ? 'pi pi-eye' : 'pi pi-eye-slash'"></i>
+              </button>
+            </div>
+            @if (formulario.controls.password.touched && formulario.controls.password.invalid) {
+              @if (formulario.controls.password.errors?.['required']) {
+                <p class="reg-field__error">La contraseña es obligatoria.</p>
+              } @else if (formulario.controls.password.errors?.['passwordCorta']) {
+                <p class="reg-field__error">Más de 8 caracteres (mínimo 9).</p>
+              } @else if (formulario.controls.password.errors?.['passwordMayus']) {
+                <p class="reg-field__error">Incluye al menos una mayúscula.</p>
+              } @else if (formulario.controls.password.errors?.['passwordMinus']) {
+                <p class="reg-field__error">Incluye al menos una minúscula.</p>
+              } @else if (formulario.controls.password.errors?.['passwordEspecial']) {
+                <p class="reg-field__error">Incluye un carácter especial (por ejemplo ! @ # $ %).</p>
+              }
+            }
+            <p class="text-[11px] text-surface-500 mt-1 mb-0 leading-snug">
+              Mínimo 9 caracteres: mayúscula, minúscula y un símbolo.
+            </p>
+          </div>
+
+          <div class="reg-field">
+            <label class="reg-field__label"><span class="reg-req">*</span> CONFIRME LA CONTRASEÑA</label>
+            <div class="reg-field__input-wrap">
+              <i class="pi pi-lock reg-field__icon"></i>
+              <input
+                [type]="mostrarConfirmar ? 'text' : 'password'"
+                formControlName="confirmar"
+                class="reg-field__input"
+                placeholder="Escriba aquí"
+                autocomplete="new-password"
+                (focus)="focusSeccion('seguridad')"
+              />
+              <button type="button" class="reg-field__toggle" (click)="mostrarConfirmar = !mostrarConfirmar" tabindex="-1">
+                <i [class]="mostrarConfirmar ? 'pi pi-eye' : 'pi pi-eye-slash'"></i>
+              </button>
+            </div>
+            @if (formulario.controls.confirmar.touched && contrasenasNoCoinciden()) {
+              <p class="reg-field__error">Las contraseñas no coinciden.</p>
+            }
+          </div>
+        </div>
+
+        <!-- Fila 4: Rol -->
+        <div class="reg-row reg-row--center" (focusin)="focusSeccion('rol')">
+          <div class="reg-field reg-field--rol">
+            <label class="reg-field__label"><span class="reg-req">*</span> ELEGIR ROL</label>
+            <div class="reg-field__input-wrap reg-field__input-wrap--select">
+              <i class="pi pi-users reg-field__icon"></i>
+              <p-select
+                formControlName="tipo"
+                [options]="tiposCuenta"
+                optionLabel="label"
+                optionValue="value"
+                styleClass="reg-select"
+                placeholder="Asistente"
+                appendTo="body"
+              ></p-select>
+            </div>
+          </div>
+        </div>
+
+        @if (formulario.controls.tipo.value === 'ORGANIZADOR') {
+          <div class="reg-org-notice">
+            <i class="pi pi-info-circle mr-1"></i>
+            Las cuentas de Organizador deben ser aprobadas por un administrador antes de poder iniciar sesión.
+          </div>
+        }
+
+        <!-- Botón -->
+        <div class="reg-actions">
+          <button type="submit" class="reg-btn" [disabled]="cargando()">
+            @if (cargando()) { <i class="pi pi-spin pi-spinner mr-2"></i> }
+            Registrarme
+          </button>
+          <p class="reg-actions__sub">Crear Mi Cuenta</p>
+        </div>
+
+        <!-- Catálogo público -->
+        <a routerLink="/catalogo" class="reg-catalogo">
+          <i class="pi pi-calendar"></i> Ver eventos públicos
+        </a>
+
+        <p class="reg-login-link">
+          ¿Ya tienes cuenta?
+          <a routerLink="/login" class="reg-login-link__a">Inicia sesión</a>
+        </p>
+      </form>
+    </div>
+  </div>
+</div>

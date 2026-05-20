@@ -1,0 +1,126 @@
+<div class="min-h-screen flex flex-col bg-white">
+  <header class="app-shell-header h-16 px-4 lg:px-8 text-white flex items-center justify-between gap-4 sticky top-0 z-30 border-b border-white/10">
+    <app-logo size="md" link="/catalogo" ariaLabel="ExperienZia — catálogo" />
+
+    <div class="hidden md:flex flex-1 max-w-xl mx-2">
+      <div class="relative w-full flex items-center bg-white rounded-full pr-1">
+        <input
+          type="text"
+          placeholder="Busca eventos por nombre..."
+          class="flex-1 h-9 pl-4 pr-3 bg-transparent rounded-full focus:outline-none text-sm text-surface-900 placeholder:text-surface-400"
+          [ngModel]="nombre()"
+          (ngModelChange)="nombre.set($event)"
+        />
+        <button
+          type="button"
+          class="h-8 px-4 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition flex items-center gap-1.5"
+        >
+          <i class="pi pi-search text-[10px]"></i>
+          <span>Buscar</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="flex items-center gap-2 text-sm flex-wrap justify-end">
+      <button
+        type="button"
+        (click)="mostrarVerificar.set(true)"
+        class="px-3 h-9 rounded-full border border-white/40 text-white/95 hover:bg-white/10 font-semibold text-xs flex items-center transition cursor-pointer"
+      >
+        Verificar certificado
+      </button>
+      <a routerLink="/login" class="px-4 h-9 rounded-full bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs flex items-center transition">
+        Iniciar Sesión
+      </a>
+      <a routerLink="/registro" class="px-4 h-9 rounded-full bg-brand-700 hover:bg-brand-800 text-white font-bold text-xs flex items-center transition">
+        Regístrate
+      </a>
+    </div>
+  </header>
+
+  <main class="cat-body">
+    <!-- Título -->
+    <div class="flex items-end justify-between gap-4 flex-wrap mb-4">
+      <div>
+        <h1 class="ez-section-title">Eventos disponibles</h1>
+        <p class="ez-page-subtitle !mb-0">Explora eventos públicos. Tarifas e inscripción solo tras iniciar sesión.</p>
+      </div>
+    </div>
+
+    <!-- Filtros -->
+    <div class="ez-card mb-5">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+        <div class="ez-field !mb-0">
+          <label class="ez-field-label">Nombre</label>
+          <input pInputText class="w-full" placeholder="BUSCAR..."
+                 [ngModel]="nombre()" (ngModelChange)="nombre.set($event)" />
+        </div>
+        <div class="ez-field !mb-0">
+          <label class="ez-field-label">Categoría</label>
+          <input pInputText class="w-full" placeholder="TECNOLOGÍA, MÚSICA..."
+                 [ngModel]="categoria()" (ngModelChange)="categoria.set($event)" />
+        </div>
+        <div class="text-right text-xs text-brand-600 font-semibold pt-4">
+          {{ filtrados().length }} evento{{ filtrados().length !== 1 ? 's' : '' }} encontrado{{ filtrados().length !== 1 ? 's' : '' }}
+        </div>
+      </div>
+    </div>
+
+    <!-- Cargando -->
+    @if (cargando()) {
+      <div class="flex justify-center py-12">
+        <p-progressSpinner styleClass="!w-10 !h-10" strokeWidth="4"></p-progressSpinner>
+      </div>
+    } @else if (filtrados().length === 0) {
+      <div class="text-center py-12">
+        <i class="pi pi-calendar-times text-4xl text-brand-300 mb-2"></i>
+        <p class="text-surface-500">No hay eventos que coincidan con tu búsqueda.</p>
+      </div>
+    } @else {
+      <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+        @for (e of filtrados(); track e.id) {
+          <article class="ez-event-card cursor-pointer hover:shadow-card transition"
+                   [routerLink]="['/catalogo', e.id]">
+            <header class="ez-event-card-header">
+              <span class="ez-event-card-badge">A</span>
+              <h3 class="ez-event-card-title leading-tight line-clamp-2 flex-1 min-w-0">
+                {{ e.nombre }}
+              </h3>
+            </header>
+
+            @if (e.imagen) {
+              <img [src]="e.imagen" [alt]="e.nombre" class="w-full h-40 object-cover" />
+            } @else {
+              <div class="w-full h-40 bg-brand-gradient flex items-center justify-center text-white">
+                <i class="pi pi-calendar text-4xl opacity-90"></i>
+              </div>
+            }
+
+            <div class="ez-event-card-body space-y-2 text-[13px]">
+              <div class="text-surface-700">
+                <div class="font-bold">{{ e.fecha | date: 'dd' }} de {{ e.fecha | date: 'MMMM' }} de {{ e.fecha | date: 'yyyy' }}</div>
+                <div class="text-surface-500 text-xs">{{ e.fecha | date: 'h:mm a' }}</div>
+              </div>
+
+              @if (e.descripcion) {
+                <p class="text-surface-600 line-clamp-2">{{ e.descripcion }}</p>
+              }
+            </div>
+
+            <footer class="ez-event-card-footer">
+              <a [routerLink]="['/catalogo', e.id]"
+                 class="ez-btn-primary ez-btn-sm w-full justify-center"
+                 (click)="$event.stopPropagation()">
+                Ver detalles
+              </a>
+            </footer>
+          </article>
+        }
+      </div>
+    }
+  </main>
+
+  @if (mostrarVerificar()) {
+    <app-verificar-certificado-modal (cerrarModal)="mostrarVerificar.set(false)" />
+  }
+</div>

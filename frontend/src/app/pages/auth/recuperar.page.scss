@@ -1,0 +1,207 @@
+:host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rc-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(55, 32, 80, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.rc-modal {
+  position: relative;
+  z-index: 1;
+  width: 95%;
+  max-width: 440px;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  padding: 1.75rem;
+  animation: rcSlideIn 0.25s ease-out;
+}
+
+@keyframes rcSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.rc-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.rc-modal__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-800);
+
+  i { color: var(--brand-500); margin-right: 0.35rem; }
+}
+
+.rc-modal__sub {
+  font-size: 0.78rem;
+  color: #6b6b7b;
+  margin-top: 0.3rem;
+  line-height: 1.4;
+}
+
+.rc-modal__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+
+  &:hover { background: var(--brand-100); }
+  i { font-size: 0.85rem; }
+}
+
+/* ── Form fields ───────────────────────── */
+.rc-field {
+  margin-bottom: 0.85rem;
+}
+
+.rc-field__label {
+  display: block;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--brand-700);
+  text-transform: uppercase;
+  margin-bottom: 0.3rem;
+}
+
+.rc-field__input {
+  width: 100%;
+  height: 2.6rem;
+  padding: 0 0.75rem;
+  border: 1.5px solid #e0d4ec;
+  border-radius: 0.5rem;
+  background: #faf8fd;
+  font-size: 0.85rem;
+  color: #1e1e2f;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &::placeholder { color: #b5a8c4; }
+  &:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px rgba(144, 97, 194, 0.15);
+  }
+}
+
+.rc-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  height: 2.7rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: opacity 0.15s;
+  margin-top: 0.5rem;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  i { font-size: 0.75rem; }
+}
+
+.rc-back-link {
+  display: block;
+  text-align: center;
+  font-size: 0.75rem;
+  color: var(--brand-600);
+  margin-top: 0.85rem;
+  cursor: pointer;
+  background: none;
+  border: none;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+
+  &:hover { color: var(--brand-800); }
+}
+
+/* ── Resultado exitoso ─────────────────── */
+.rc-success {
+  border: 1.5px solid #dcfce7;
+  background: #f0fdf4;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  animation: rcSlideIn 0.2s ease-out;
+}
+
+.rc-success__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 0.6rem;
+
+  i { font-size: 1rem; }
+}
+
+.rc-success__password {
+  font-family: monospace;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #1e1e2f;
+  letter-spacing: 0.1em;
+  padding: 0.5rem 0;
+}
+
+.rc-success__hint {
+  font-size: 0.7rem;
+  color: #6b7280;
+  margin-bottom: 0.75rem;
+}
+
+.rc-success__btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  width: 100%;
+  height: 2.4rem;
+  border: 1.5px solid var(--brand-400);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--brand-700);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--brand-50);
+    border-color: var(--brand-600);
+  }
+}

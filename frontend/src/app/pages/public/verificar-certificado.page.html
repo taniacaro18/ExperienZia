@@ -1,0 +1,82 @@
+<!-- Backdrop semi-transparente: la página real se ve detrás -->
+<div class="vc-backdrop" (click)="cerrar()"></div>
+
+<!-- Modal card -->
+<div class="vc-modal">
+  <div class="vc-modal__header">
+    <div>
+      <h1 class="vc-modal__title">
+        <i class="pi pi-verified"></i> Verificar certificado
+      </h1>
+      <p class="vc-modal__sub">
+        Ingresa el <strong>código único</strong> del PDF emitido por la plataforma.
+      </p>
+    </div>
+    <button type="button" class="vc-modal__close" (click)="cerrar()">
+      <i class="pi pi-times"></i>
+    </button>
+  </div>
+
+  <div class="vc-search">
+    <div class="vc-search__wrap">
+      <i class="pi pi-search vc-search__icon"></i>
+      <input
+        class="vc-search__input"
+        placeholder="Ej. CERT-XXXX-..."
+        [ngModel]="codigo()"
+        (ngModelChange)="codigo.set($event)"
+        (keyup.enter)="buscar()"
+      />
+    </div>
+    <button
+      type="button"
+      class="vc-search__btn"
+      [disabled]="cargando()"
+      (click)="buscar()"
+    >
+      @if (cargando()) {
+        <i class="pi pi-spin pi-spinner"></i>
+      } @else {
+        <i class="pi pi-search"></i>
+      }
+      Verificar
+    </button>
+  </div>
+
+  @if (resultado(); as cert) {
+    <div class="vc-result">
+      <div class="vc-result__badge">
+        <i class="pi pi-check-circle"></i> Certificado válido
+      </div>
+
+      <div class="vc-result__grid">
+        <div class="vc-result__item">
+          <span class="vc-result__label">Participante</span>
+          <span class="vc-result__value">{{ cert.nombreAsistente || '—' }}</span>
+        </div>
+        <div class="vc-result__item">
+          <span class="vc-result__label">Evento</span>
+          <span class="vc-result__value">{{ cert.nombreEvento || '—' }}</span>
+        </div>
+        <div class="vc-result__item">
+          <span class="vc-result__label">Fecha evento</span>
+          <span class="vc-result__value">{{ cert.fechaEvento | date: 'mediumDate' }}</span>
+        </div>
+        @if (cert.duracionHoras != null) {
+          <div class="vc-result__item">
+            <span class="vc-result__label">Duración</span>
+            <span class="vc-result__value">{{ cert.duracionHoras }} horas</span>
+          </div>
+        }
+      </div>
+
+      <div class="vc-result__code">
+        <i class="pi pi-hashtag"></i> {{ cert.codigoUnico || cert.codigo }}
+      </div>
+
+      <button type="button" class="vc-result__download" (click)="descargarPdf()">
+        <i class="pi pi-download"></i> Descargar PDF
+      </button>
+    </div>
+  }
+</div>

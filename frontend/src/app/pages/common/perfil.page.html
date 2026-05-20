@@ -1,0 +1,108 @@
+<div class="space-y-6 max-w-4xl">
+  <div>
+    <h1 class="text-2xl font-bold text-surface-900">Mi perfil</h1>
+    <p class="text-surface-500 text-sm">
+      Puedes actualizar tu número telefónico y tu contraseña. El nombre, el correo y el documento no se
+      modifican desde aquí; si necesitas un cambio, contacta al administrador.
+    </p>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Tarjeta lateral resumen -->
+    <p-card styleClass="!shadow-card">
+      <div class="text-center">
+        <p-avatar
+          [label]="iniciales(store.usuario()?.nombre)"
+          shape="circle"
+          styleClass="!w-24 !h-24 !text-3xl !bg-brand-gradient !text-white"
+        ></p-avatar>
+        <h2 class="text-lg font-semibold text-surface-900 mt-4">
+          {{ store.usuario()?.nombre }}
+        </h2>
+        <p class="text-sm text-surface-500">{{ store.usuario()?.email }}</p>
+
+        <div class="flex flex-wrap justify-center gap-2 mt-4">
+          <p-tag [value]="store.rol() ?? ''" severity="info"></p-tag>
+          <p-tag
+            [value]="store.usuario()?.estado ?? ''"
+            [severity]="store.usuario()?.estado === 'ACTIVO' ? 'success' : 'warn'"
+          ></p-tag>
+        </div>
+      </div>
+    </p-card>
+
+    <!-- Datos de solo lectura + formulario editable -->
+    <p-card styleClass="!shadow-card lg:col-span-2">
+      <h2 class="text-lg font-semibold text-surface-900 mb-4">Datos de la cuenta</h2>
+
+      <dl class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm mb-6 pb-6 border-b border-surface-100">
+        <div>
+          <dt class="text-surface-500">Nombre completo</dt>
+          <dd class="font-medium text-surface-900 mt-0.5">{{ store.usuario()?.nombre }}</dd>
+        </div>
+        <div>
+          <dt class="text-surface-500">Correo electrónico</dt>
+          <dd class="font-medium text-surface-900 mt-0.5 break-all">{{ store.usuario()?.email }}</dd>
+        </div>
+        <div>
+          <dt class="text-surface-500">Tipo de documento</dt>
+          <dd class="font-medium text-surface-900 mt-0.5">
+            {{ etiquetaTipoDocumento(store.usuario()?.tipoDocumento) }}
+          </dd>
+        </div>
+        <div>
+          <dt class="text-surface-500">Número de documento</dt>
+          <dd class="font-medium text-surface-900 mt-0.5">
+            {{ store.usuario()?.numeroDocumento || '—' }}
+          </dd>
+        </div>
+      </dl>
+
+      <h3 class="text-base font-semibold text-surface-900 mb-3">Cambios permitidos</h3>
+
+      <form [formGroup]="formulario" (ngSubmit)="guardar()" class="space-y-4" novalidate>
+        <div>
+          <label class="block text-sm font-medium text-surface-700 mb-1.5">Teléfono</label>
+          <input pInputText formControlName="telefono" class="w-full" placeholder="Ej. 300 1234567" />
+          @if (formulario.controls.telefono.touched && formulario.controls.telefono.hasError('telefonoLongitud')) {
+            <small class="block text-red-600 mt-1">Usa entre 7 y 20 caracteres.</small>
+          }
+          @if (formulario.controls.telefono.touched && formulario.controls.telefono.hasError('telefonoFormato')) {
+            <small class="block text-red-600 mt-1">Solo dígitos, espacios y los símbolos + ( ) - .</small>
+          }
+        </div>
+
+        <div class="border-t border-surface-100 pt-4">
+          <h3 class="text-sm font-semibold text-surface-700 mb-2">
+            Nueva contraseña <span class="text-surface-400 font-normal">(opcional)</span>
+          </h3>
+          <p-password
+            formControlName="nuevaPassword"
+            [toggleMask]="true"
+            [feedback]="true"
+            inputStyleClass="w-full"
+            styleClass="w-full"
+            placeholder="Déjalo vacío si no quieres cambiarla"
+          ></p-password>
+          @if (
+            formulario.controls.nuevaPassword.touched && formulario.controls.nuevaPassword.hasError('minlength')
+          ) {
+            <small class="block text-red-600 mt-1">
+              Mínimo {{ formulario.controls.nuevaPassword.getError('minlength')?.requiredLength }} caracteres.
+            </small>
+          }
+        </div>
+
+        <div class="flex justify-end pt-2">
+          <p-button
+            type="submit"
+            label="Guardar cambios"
+            icon="pi pi-save"
+            styleClass="!bg-brand-600 !border-brand-600 hover:!bg-brand-700"
+            [loading]="cargando()"
+          ></p-button>
+        </div>
+      </form>
+    </p-card>
+  </div>
+</div>

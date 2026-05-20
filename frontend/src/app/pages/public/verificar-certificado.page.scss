@@ -1,0 +1,222 @@
+:host {
+  display: block;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.vc-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(55, 32, 80, 0.55);
+  backdrop-filter: blur(4px);
+  cursor: pointer;
+}
+
+.vc-modal {
+  position: relative;
+  z-index: 1;
+  width: 95%;
+  max-width: 480px;
+  background: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.2);
+  padding: 1.75rem;
+  animation: vcSlideIn 0.25s ease-out;
+}
+
+@keyframes vcSlideIn {
+  from { opacity: 0; transform: translateY(20px) scale(0.97); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ── Header ───────────────────────────── */
+.vc-modal__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.vc-modal__title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: var(--brand-800);
+
+  i {
+    color: var(--brand-500);
+    margin-right: 0.35rem;
+  }
+}
+
+.vc-modal__sub {
+  font-size: 0.78rem;
+  color: #6b6b7b;
+  margin-top: 0.3rem;
+  line-height: 1.4;
+
+  strong { color: var(--brand-700); }
+}
+
+.vc-modal__close {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: var(--brand-50);
+  color: var(--brand-600);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+
+  &:hover { background: var(--brand-100); }
+  i { font-size: 0.85rem; }
+}
+
+/* ── Search ───────────────────────────── */
+.vc-search {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.vc-search__wrap {
+  flex: 1;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.vc-search__icon {
+  position: absolute;
+  left: 0.75rem;
+  color: var(--brand-400);
+  font-size: 0.85rem;
+}
+
+.vc-search__input {
+  width: 100%;
+  height: 2.6rem;
+  padding: 0 0.75rem 0 2.2rem;
+  border: 1.5px solid #e0d4ec;
+  border-radius: 0.5rem;
+  background: #faf8fd;
+  font-size: 0.85rem;
+  color: #1e1e2f;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+
+  &::placeholder { color: #b5a8c4; }
+  &:focus {
+    border-color: var(--brand-500);
+    box-shadow: 0 0 0 3px rgba(144, 97, 194, 0.15);
+  }
+}
+
+.vc-search__btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  height: 2.6rem;
+  padding: 0 1.1rem;
+  border: none;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, var(--brand-500), var(--brand-700));
+  color: #fff;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s;
+
+  &:hover:not(:disabled) { opacity: 0.9; }
+  &:disabled { opacity: 0.6; cursor: not-allowed; }
+  i { font-size: 0.8rem; }
+}
+
+/* ── Resultado ────────────────────────── */
+.vc-result {
+  border: 1.5px solid #dcfce7;
+  background: #f0fdf4;
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  animation: vcSlideIn 0.2s ease-out;
+}
+
+.vc-result__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #166534;
+  margin-bottom: 0.85rem;
+
+  i { font-size: 1rem; }
+}
+
+.vc-result__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+.vc-result__item {
+  display: flex;
+  flex-direction: column;
+}
+
+.vc-result__label {
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: #6b7280;
+  text-transform: uppercase;
+}
+
+.vc-result__value {
+  font-size: 0.84rem;
+  color: #1e1e2f;
+  font-weight: 500;
+}
+
+.vc-result__code {
+  font-size: 0.72rem;
+  font-family: monospace;
+  color: #4b5563;
+  border-top: 1px solid #bbf7d0;
+  padding-top: 0.6rem;
+  margin-bottom: 0.75rem;
+
+  i { color: #86efac; margin-right: 0.25rem; }
+}
+
+.vc-result__download {
+  width: 100%;
+  height: 2.4rem;
+  border: 1.5px solid var(--brand-400);
+  border-radius: 0.5rem;
+  background: #fff;
+  color: var(--brand-700);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  transition: all 0.15s;
+
+  &:hover {
+    background: var(--brand-50);
+    border-color: var(--brand-600);
+  }
+}

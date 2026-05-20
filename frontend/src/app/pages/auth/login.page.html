@@ -1,0 +1,149 @@
+<div class="login-split">
+  <!-- Lado izquierdo: imagen -->
+  <div class="login-image">
+    <img src="/login-bg.jpg" alt="" class="login-image__photo" />
+    <div class="login-image__overlay"></div>
+    <div class="login-image__content">
+      <app-logo size="lg" ariaLabel="ExperienZia" />
+      <h2 class="login-image__tagline">Vive la experiencia.</h2>
+    </div>
+  </div>
+
+  <!-- Lado derecho: formulario -->
+  <div class="login-form-side">
+    <div class="login-form-wrapper">
+      <!-- Logo + ayuda contraseña (cuentas creadas por organizador) -->
+      <div class="login-brand-row">
+        <div class="login-brand-row__cluster">
+          <app-logo size="md" ariaLabel="ExperienZia" />
+          <div class="login-brand-row__hint-wrap">
+            <button
+              type="button"
+              class="login-brand-row__hint"
+              [class.login-brand-row__hint--active]="ayudaOrganizadorVisible()"
+              (click)="toggleAyudaOrganizador($event)"
+              [attr.aria-expanded]="ayudaOrganizadorVisible()"
+              aria-controls="login-ayuda-organizador"
+              aria-label="Ayuda: contraseña si te registró un organizador"
+            >
+              <span class="login-brand-row__hint-glyph" aria-hidden="true">ℹ</span>
+            </button>
+            @if (ayudaOrganizadorVisible()) {
+              <div
+                class="login-brand-row__popover"
+                id="login-ayuda-organizador"
+                role="tooltip"
+                (click)="$event.stopPropagation()"
+              >
+                <div class="login-brand-row__popover-glow" aria-hidden="true"></div>
+                <div class="login-brand-row__popover-arrow" aria-hidden="true"></div>
+                <div class="login-brand-row__popover-inner">
+                  <span class="login-brand-row__popover-pill">Acceso</span>
+                  <h2 class="login-brand-row__popover-title">¿Te registró un organizador?</h2>
+                  <p class="login-brand-row__popover-lead">
+                    Tu contraseña para entrar es <strong>tu número de documento</strong>, el mismo que usaron al inscribirte.
+                  </p>
+                  <p class="login-brand-row__popover-note">
+                    Si ya la cambiaste desde tu perfil o con «Olvidé mi contraseña», usa la contraseña actual.
+                  </p>
+                  <button type="button" class="login-brand-row__popover-btn" (click)="cerrarAyudaOrganizador()">
+                    Entendido
+                  </button>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <h1 class="login-greeting">¡Hola! Qué bueno verte de nuevo</h1>
+      <p class="login-subtitle">INICIO DE SESIÓN</p>
+
+      <form
+        [formGroup]="formulario"
+        (ngSubmit)="enviar()"
+        class="login-form"
+        novalidate
+      >
+        <!-- Email -->
+        <div class="login-field">
+          <label class="login-field__label">CORREO ELECTRÓNICO</label>
+          <div class="login-field__input-wrap">
+            <i class="pi pi-envelope login-field__icon"></i>
+            <input
+              type="email"
+              formControlName="email"
+              class="login-field__input"
+              placeholder="ejemplo@correo.com"
+              autocomplete="email"
+            />
+          </div>
+          @if (formulario.controls.email.touched && formulario.controls.email.invalid) {
+            <p class="login-field__error">Ingresa un correo válido.</p>
+          }
+        </div>
+
+        <!-- Contraseña -->
+        <div class="login-field">
+          <label class="login-field__label" for="login-password">CONTRASEÑA</label>
+          <div class="login-field__input-wrap">
+            <i class="pi pi-lock login-field__icon"></i>
+            <input
+              id="login-password"
+              [type]="mostrarPassword ? 'text' : 'password'"
+              formControlName="password"
+              class="login-field__input"
+              placeholder="••••••••"
+              autocomplete="current-password"
+            />
+            <button
+              type="button"
+              class="login-field__toggle"
+              (click)="mostrarPassword = !mostrarPassword"
+              tabindex="-1"
+            >
+              <i [class]="mostrarPassword ? 'pi pi-eye' : 'pi pi-eye-slash'"></i>
+            </button>
+          </div>
+          @if (formulario.controls.password.touched && formulario.controls.password.invalid) {
+            <p class="login-field__error">Mínimo 4 caracteres.</p>
+          }
+        </div>
+
+        <!-- Botón -->
+        <button
+          type="submit"
+          class="login-btn"
+          [disabled]="cargando()"
+        >
+          @if (cargando()) {
+            <i class="pi pi-spin pi-spinner mr-2"></i>
+          }
+          INGRESAR
+        </button>
+
+        <!-- Olvidaste contraseña -->
+        <div class="text-center mt-4">
+          <button type="button" class="login-link" (click)="mostrarRecuperar.set(true)">
+            ¿Olvidaste tu Contraseña?
+          </button>
+        </div>
+
+        <!-- Catálogo público -->
+        <a routerLink="/catalogo" class="login-catalogo">
+          <i class="pi pi-calendar"></i> Ver eventos públicos
+        </a>
+
+        <!-- Registro -->
+        <p class="login-register">
+          ¿No tienes cuenta?
+          <a routerLink="/registro" class="login-register__link">Regístrate aquí</a>
+        </p>
+      </form>
+    </div>
+  </div>
+
+  @if (mostrarRecuperar()) {
+    <app-recuperar-modal (cerrarModal)="mostrarRecuperar.set(false)" />
+  }
+</div>
