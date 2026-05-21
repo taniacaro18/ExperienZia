@@ -1,9 +1,11 @@
+// Archivo `theme/experienzia-preset.ts` — configuración visual de PrimeNG: experienzia preset.
 import { definePreset } from '@primeuix/themes';
 import Aura from '@primeuix/themes/aura';
 
 /**
- * Tema ExperienZia: preset Aura de PrimeNG ajustado a la paleta del Figma
- * (violeta como color primario, verde menta como acento informativo).
+ * Archivo de tema visual de la app (PrimeNG / PrimeUIX).
+ * Partimos del preset Aura y le ponemos los colores violeta de ExperienZia.
+ * No es una página: solo configuración de colores para toda la interfaz.
  */
 export const ExperienziaPreset = definePreset(Aura, {
   semantic: {

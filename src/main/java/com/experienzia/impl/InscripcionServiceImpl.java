@@ -48,6 +48,10 @@ import java.util.UUID;
 
 @Service
 @Transactional
+/**
+ * Clase de implementación del módulo Inscripcion.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class InscripcionServiceImpl implements InscripcionService {
 
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
@@ -56,14 +60,22 @@ public class InscripcionServiceImpl implements InscripcionService {
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es-CO"));
 
     @Value("${experienzia.eventos.zona-horaria:America/Bogota}")
+    /** Dato del campo zona horaria eventos */
     private String zonaHorariaEventos;
 
+    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
+    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
+    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
+    /** Dato del campo staff evento repository */
     private final StaffEventoAsignacionRepository staffEventoRepository;
+    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
+    /** Dato del campo password encoder */
     private final PasswordEncoder passwordEncoder;
 
     public InscripcionServiceImpl(InscripcionRepository inscripcionRepository,
@@ -83,12 +95,14 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `inscribir` (lógica del servicio). */
     public InscripcionDTO inscribir(Long usuarioId, Long eventoId) {
         return inscribirInterno(usuarioId, eventoId, true);
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /** Ejecuta `inscribirOrganizadorEnSuEvento` (lógica del servicio). */
     public InscripcionDTO inscribirOrganizadorEnSuEvento(Long eventoId) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("El evento no existe.", HttpStatus.NOT_FOUND));
@@ -209,6 +223,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `cancelar` (lógica del servicio). */
     public InscripcionDTO cancelar(Long inscripcionId) {
         Inscripcion ins = buscarInscripcion(inscripcionId);
         if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
@@ -229,6 +244,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `checkIn` (lógica del servicio). */
     public InscripcionDTO checkIn(Long inscripcionId, Long staffUsuarioId) {
         Inscripcion ins = buscarInscripcion(inscripcionId);
         Evento evento = eventoRepository.findById(ins.getEventoId())
@@ -268,6 +284,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `checkInPorQR` (lógica del servicio). */
     public InscripcionDTO checkInPorQR(String codigoQR, Long staffUsuarioId, Long eventoId) {
         if (codigoQR == null || codigoQR.isBlank()) {
             throw new CustomException("Código QR vacío.", HttpStatus.BAD_REQUEST);
@@ -281,6 +298,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `checkOut` (lógica del servicio). */
     public InscripcionDTO checkOut(Long inscripcionId, Long staffUsuarioId) {
         Inscripcion ins = buscarInscripcion(inscripcionId);
         Evento evento = eventoRepository.findById(ins.getEventoId())
@@ -309,6 +327,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `checkOutPorQR` (lógica del servicio). */
     public InscripcionDTO checkOutPorQR(String codigoQR, Long staffUsuarioId, Long eventoId) {
         if (codigoQR == null || codigoQR.isBlank()) {
             throw new CustomException("Código QR vacío.", HttpStatus.BAD_REQUEST);
@@ -323,18 +342,21 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorEvento` (lógica del servicio). */
     public List<InscripcionDTO> listarPorEvento(Long eventoId) {
         return inscripcionRepository.findByEventoId(eventoId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorUsuario` (lógica del servicio). */
     public List<InscripcionDTO> listarPorUsuario(Long usuarioId) {
         return inscripcionRepository.findByUsuarioId(usuarioId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarAsistentesParaStaff` (lógica del servicio). */
     public List<AsistenteEventoDTO> listarAsistentesParaStaff(Long eventoId, Long staffUsuarioId, String busqueda) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
@@ -344,6 +366,7 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarAsistentesParaOrganizador` (lógica del servicio). */
     public List<AsistenteEventoDTO> listarAsistentesParaOrganizador(Long eventoId, Long organizadorId, String busqueda) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
@@ -369,6 +392,7 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `consultarAforoEnVivo` (lógica del servicio). */
     public AforoEnVivoDTO consultarAforoEnVivo(Long eventoId) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
@@ -394,6 +418,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `cargarAsistentesManual` (lógica del servicio). */
     public ResultadoCargaAsistentesDTO cargarAsistentesManual(Long eventoId, Long organizadorId, List<FilaAsistenteCargaDTO> filas) {
         if (filas == null || filas.isEmpty()) {
             throw new CustomException("Debe enviar al menos una fila de asistentes.", HttpStatus.BAD_REQUEST);
@@ -430,11 +455,13 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `cargarAsistentesCsv` (lógica del servicio). */
     public ResultadoCargaAsistentesDTO cargarAsistentesCsv(Long eventoId, Long organizadorId, String contenidoCsv) {
         return cargarAsistentesManual(eventoId, organizadorId, parseCsv(contenidoCsv));
     }
 
     @Override
+    /** Ejecuta `asignarStaff` (lógica del servicio). */
     public void asignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion) {
         Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
         validarStaffPropio(organizadorId, staffUsuarioId);
@@ -461,6 +488,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `cambiarFuncionStaff` (lógica del servicio). */
     public StaffAsignadoDTO cambiarFuncionStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion) {
         Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
         StaffEventoAsignacion asignacion = staffEventoRepository
@@ -477,6 +505,7 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
+    /** Ejecuta `desasignarStaff` (lógica del servicio). */
     public void desasignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId) {
         Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
         StaffEventoAsignacion asignacion = staffEventoRepository
@@ -490,6 +519,7 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarStaffIdsPorEvento` (lógica del servicio). */
     public List<Long> listarStaffIdsPorEvento(Long eventoId) {
         return staffEventoRepository.findByEventoId(eventoId).stream()
                 .map(StaffEventoAsignacion::getStaffUsuarioId)
@@ -498,6 +528,7 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarStaffPorEvento` (lógica del servicio). */
     public List<StaffAsignadoDTO> listarStaffPorEvento(Long eventoId) {
         return staffEventoRepository.findByEventoId(eventoId).stream()
                 .map(a -> {
@@ -509,6 +540,7 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarEventosDelStaff` (lógica del servicio). */
     public List<EventoStaffDTO> listarEventosDelStaff(Long staffUsuarioId) {
         return staffEventoRepository.findByStaffUsuarioId(staffUsuarioId).stream()
                 .map(a -> {

@@ -1,3 +1,4 @@
+// Archivo `pages/admin/eventos.page.ts` — pages: eventos.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

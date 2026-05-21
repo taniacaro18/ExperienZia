@@ -24,6 +24,8 @@ import org.springframework.web.multipart.MultipartFile;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 
+// Controlador grande: inscripciones, check-in/out, carga de asistentes y staff de eventos
+// No tiene @RequestMapping en la clase; cada método pone la ruta completa
 @RestController
 public class InscripcionController {
 
@@ -35,14 +37,17 @@ public class InscripcionController {
         this.auditoriaService = auditoriaService;
     }
 
+    // POST /api/inscripciones — un usuario se apunta a un evento
     @PostMapping("/api/inscripciones")
     public ResponseEntity<InscripcionDTO> crear(@RequestBody InscripcionDTO dto, HttpServletRequest request) {
         InscripcionDTO ins = inscripcionService.inscribir(dto.getUsuarioId(), dto.getEventoId());
+        // Guardamos en auditoría quién se inscribió y desde qué IP
         auditoriaService.registrar(ins.getUsuarioId(), "INSCRIPCION_CREADA", "Inscripcion", ins.getId(),
                 ClientIpResolver.resolve(request));
         return ResponseEntity.status(HttpStatus.CREATED).body(ins);
     }
 
+    // PUT /api/inscripciones/{id}/cancelar — el asistente cancela su inscripción
     @PutMapping("/api/inscripciones/{id}/cancelar")
     public ResponseEntity<InscripcionDTO> cancelar(@PathVariable Long id, HttpServletRequest request) {
         InscripcionDTO ins = inscripcionService.cancelar(id);
@@ -51,16 +56,19 @@ public class InscripcionController {
         return ResponseEntity.ok(ins);
     }
 
+    // GET /api/inscripciones/evento/{eventoId} — todas las inscripciones de un evento
     @GetMapping("/api/inscripciones/evento/{eventoId}")
     public ResponseEntity<List<InscripcionDTO>> listarPorEvento(@PathVariable Long eventoId) {
         return ResponseEntity.ok(inscripcionService.listarPorEvento(eventoId));
     }
 
+    // GET /api/inscripciones/usuario/{usuarioId} — eventos en los que está inscrito un usuario
     @GetMapping("/api/inscripciones/usuario/{usuarioId}")
     public ResponseEntity<List<InscripcionDTO>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(inscripcionService.listarPorUsuario(usuarioId));
     }
 
+    // PUT /api/inscripciones/{id}/check-in — marca entrada manual (staff en el evento)
     @PutMapping("/api/inscripciones/{id}/check-in")
     public ResponseEntity<InscripcionDTO> checkIn(@PathVariable Long id, @RequestBody CheckInDTO body,
                                                     HttpServletRequest request) {
@@ -73,6 +81,7 @@ public class InscripcionController {
         return ResponseEntity.ok(ins);
     }
 
+    // PUT /api/inscripciones/{id}/check-out — marca salida manual
     @PutMapping("/api/inscripciones/{id}/check-out")
     public ResponseEntity<InscripcionDTO> checkOut(@PathVariable Long id, @RequestBody CheckInDTO body,
                                                      HttpServletRequest request) {
@@ -109,6 +118,7 @@ public class InscripcionController {
         return ResponseEntity.ok(ins);
     }
 
+    // POST /api/eventos/{eventoId}/asistentes/carga-manual — el organizador pega filas de asistentes
     @PostMapping("/api/eventos/{eventoId}/asistentes/carga-manual")
     public ResponseEntity<ResultadoCargaAsistentesDTO> cargaManual(@PathVariable Long eventoId,
                                                                    @RequestBody CargaAsistentesManualDTO body,
@@ -122,6 +132,7 @@ public class InscripcionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(r);
     }
 
+    // POST multipart — sube un CSV con asistentes; consumes dice que esperamos formulario con archivo
     @PostMapping(path = "/api/eventos/{eventoId}/asistentes/carga-csv", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<ResultadoCargaAsistentesDTO> cargaCsv(@PathVariable Long eventoId,
                                                                 @RequestParam Long organizadorId,
@@ -141,6 +152,7 @@ public class InscripcionController {
         }
     }
 
+    // POST — asigna un usuario staff a un evento con una función (check-in, etc.)
     @PostMapping("/api/eventos/{eventoId}/staff/asignacion")
     public ResponseEntity<Void> asignarStaff(@PathVariable Long eventoId, @RequestBody AsignarStaffDTO body,
                                              HttpServletRequest request) {
@@ -154,6 +166,7 @@ public class InscripcionController {
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    // PUT — cambia la función del staff en ese evento (ej: de GENERAL a CHECK_IN_QR)
     @PutMapping("/api/eventos/{eventoId}/staff/{staffUsuarioId}/funcion")
     public ResponseEntity<StaffAsignadoDTO> cambiarFuncionStaff(@PathVariable Long eventoId,
                                                                 @PathVariable Long staffUsuarioId,
@@ -167,6 +180,7 @@ public class InscripcionController {
         return ResponseEntity.ok(dto);
     }
 
+    // DELETE — quita al staff del evento
     @DeleteMapping("/api/eventos/{eventoId}/staff/{staffUsuarioId}")
     public ResponseEntity<Void> desasignarStaff(@PathVariable Long eventoId,
                                                 @PathVariable Long staffUsuarioId,
@@ -196,6 +210,7 @@ public class InscripcionController {
         return ResponseEntity.ok(inscripcionService.listarEventosDelStaff(staffUsuarioId));
     }
 
+    // Convierte el texto de la función del DTO al enum FuncionStaff
     private static FuncionStaff parseFuncion(String texto) {
         if (texto == null || texto.isBlank()) return FuncionStaff.GENERAL;
         try {
@@ -207,6 +222,7 @@ public class InscripcionController {
         }
     }
 
+    // GET — lista asistentes para que el staff haga check-in (puede filtrar con ?q=nombre)
     @GetMapping("/api/eventos/{eventoId}/asistentes")
     public ResponseEntity<List<AsistenteEventoDTO>> listarAsistentesParaStaff(@PathVariable Long eventoId,
                                                                               @RequestParam Long staffUsuarioId,
@@ -214,6 +230,7 @@ public class InscripcionController {
         return ResponseEntity.ok(inscripcionService.listarAsistentesParaStaff(eventoId, staffUsuarioId, q));
     }
 
+    // GET — misma idea pero vista del organizador del evento
     @GetMapping("/api/eventos/{eventoId}/asistentes/organizador")
     public ResponseEntity<List<AsistenteEventoDTO>> listarAsistentesParaOrganizador(@PathVariable Long eventoId,
                                                                                     @RequestParam Long organizadorId,
@@ -221,6 +238,7 @@ public class InscripcionController {
         return ResponseEntity.ok(inscripcionService.listarAsistentesParaOrganizador(eventoId, organizadorId, q));
     }
 
+    // GET — cuánta gente hay dentro ahora mismo (aforo en vivo)
     @GetMapping("/api/eventos/{eventoId}/aforo")
     public ResponseEntity<AforoEnVivoDTO> aforoEnVivo(@PathVariable Long eventoId) {
         return ResponseEntity.ok(inscripcionService.consultarAforoEnVivo(eventoId));

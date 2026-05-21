@@ -11,6 +11,10 @@ import com.experienzia.entity.FuncionStaff;
 
 import java.util.List;
 
+/**
+ * Interfaz del servicio InscripcionService.
+ * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
+ */
 public interface InscripcionService {
     InscripcionDTO inscribir(Long usuarioId, Long eventoId);
 

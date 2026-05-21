@@ -35,16 +35,29 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Service
 @Transactional
+/**
+ * Clase de implementación del módulo Pago.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class PagoServiceImpl implements PagoService {
 
+    /** Dato del campo pago repository */
     private final PagoRepository pagoRepository;
+    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
+    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
+    /** Dato del campo file storage service */
     private final FileStorageService fileStorageService;
+    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
+    /** Dato del campo auditoria service */
     private final AuditoriaService auditoriaService;
+    /** Dato del campo evento service */
     private final EventoService eventoService;
+    /** Dato del campo inscripcion service */
     private final InscripcionService inscripcionService;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
 
     public PagoServiceImpl(PagoRepository pagoRepository,
@@ -68,6 +81,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    /** Ejecuta `registrar` (lógica del servicio). */
     public PagoDTO registrar(Long eventoId, Long organizadorId, MultipartFile archivo, String direccionIp) {
         if (eventoId == null) {
             throw new CustomException("El evento es requerido.", HttpStatus.BAD_REQUEST);
@@ -167,6 +181,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    /** Ejecuta `aprobar` (lógica del servicio). */
     public PagoDTO aprobar(Long pagoId, Long aprobadorId, String direccionIp) {
         assertAdministradorPuedeGestionarPagos(aprobadorId);
         Pago pago = pagoRepository.findById(pagoId)
@@ -227,6 +242,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
+    /** Ejecuta `rechazar` (lógica del servicio). */
     public PagoDTO rechazar(Long pagoId, String motivo, Long aprobadorId, String direccionIp) {
         if (motivo == null || motivo.isBlank()) {
             throw new CustomException("El motivo de rechazo es obligatorio.", HttpStatus.BAD_REQUEST);
@@ -274,24 +290,28 @@ public class PagoServiceImpl implements PagoService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPendientes` (lógica del servicio). */
     public List<PagoDTO> listarPendientes() {
         return pagoRepository.findByEstado(EstadoPago.PENDIENTE).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarTodos` (lógica del servicio). */
     public List<PagoDTO> listarTodos() {
         return pagoRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorOrganizador` (lógica del servicio). */
     public List<PagoDTO> listarPorOrganizador(Long organizadorId) {
         return pagoRepository.findByOrganizadorId(organizadorId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `obtenerPorEvento` (lógica del servicio). */
     public Optional<PagoDTO> obtenerPorEvento(Long eventoId) {
         if (eventoId == null) {
             return Optional.empty();

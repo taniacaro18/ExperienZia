@@ -1,3 +1,4 @@
+// Archivo `pages/organizador/staff.page.ts` — pages: staff.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';

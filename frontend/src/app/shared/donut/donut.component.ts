@@ -1,3 +1,4 @@
+// Archivo `shared/donut/donut.component.ts` — componente reutilizable: donut.
 import { CommonModule } from '@angular/common';
 import { Component, Input, computed, signal } from '@angular/core';
 

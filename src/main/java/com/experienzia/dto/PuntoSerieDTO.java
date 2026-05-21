@@ -4,12 +4,20 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+/**
+ * Sirve para los gráficos de los dashboards (líneas o barras).
+ * Cada objeto es un punto: un periodo de tiempo y cuánto pasó en ese mes.
+ */
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
+/**
+ * Objeto de transferencia (DTO) para punto serie. No es una tabla de la BD, solo lleva datos entre capas.
+ * (DTO = solo transporta datos entre frontend, controlador y servicio)
+ */
 public class PuntoSerieDTO {
-    /** Etiqueta del periodo, p. ej. "2026-01" o "Ene". */
+    /** Mes o etiqueta del eje X, por ejemplo "2026-01" o "Ene". */
     private String periodo;
-    /** Valor numérico (cantidad). */
+    /** Número que se pinta en el gráfico (eventos, usuarios, inscripciones, etc.). */
     private long valor;
 }

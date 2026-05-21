@@ -1,3 +1,4 @@
+// Tipos e interfaces del dominio (lo que devuelve el backend)
 export type Rol = 'ADMIN' | 'ORGANIZADOR' | 'ASISTENTE' | 'STAFF';
 export type EstadoUsuario = 'ACTIVO' | 'PENDIENTE' | 'RECHAZADO' | 'INACTIVO';
 export type TipoEvento = 'PUBLICO' | 'PRIVADO';
@@ -23,6 +24,7 @@ export type EstadoNovedadEvento = 'PENDIENTE' | 'APROBADO' | 'RECHAZADO';
 export type FuncionStaff = 'CHECK_IN_QR' | 'CHECK_IN_MANUAL' | 'REGISTRO_SALIDA' | 'GENERAL';
 export type TipoNotificacion = 'INFO' | 'ALERTA' | 'ERROR';
 
+// Datos de un usuario de la plataforma
 export interface Usuario {
   id: number;
   nombre: string;
@@ -42,7 +44,7 @@ export interface LoginRequest {
   password: string;
 }
 
-/** Respuesta de POST /api/usuarios/login */
+// Lo que devuelve el API al hacer login (token + usuario)
 export interface LoginResponse {
   accessToken: string;
   usuario: Usuario;
@@ -53,6 +55,7 @@ export interface ActualizarPerfil {
   nuevaPassword?: string;
 }
 
+// Un evento (conferencia, taller, etc.)
 export interface Evento {
   id: number;
   nombre: string;
@@ -94,6 +97,7 @@ export interface EventoNovedad {
   detalleJson?: string | null;
 }
 
+// Inscripción de un usuario a un evento (con QR y check-in)
 export interface Inscripcion {
   id: number;
   usuarioId: number;
@@ -167,6 +171,7 @@ export interface EventoStaff {
   funcion: FuncionStaff;
 }
 
+// Pago del organizador por publicar un evento
 export interface Pago {
   id: number;
   eventoId: number;
@@ -186,6 +191,7 @@ export interface Pago {
   emailOrganizador?: string;
 }
 
+// Registro de quién hizo qué (para el admin)
 export interface Auditoria {
   id: number;
   usuarioId?: number | null;
@@ -197,6 +203,7 @@ export interface Auditoria {
   direccionIp?: string | null;
 }
 
+// Aviso que aparece en la campana de notificaciones
 export interface Notificacion {
   id: number;
   usuarioId: number;
@@ -206,6 +213,7 @@ export interface Notificacion {
   fecha: string;
 }
 
+// Certificado de asistencia a un evento
 export interface Certificado {
   id: number;
   inscripcionId: number;
@@ -247,6 +255,7 @@ export interface DisponibilidadSalon {
   ocupaciones: FranjaOcupacionSalon[];
 }
 
+// Resumen numérico del panel del organizador
 export interface DashboardOrganizador {
   organizadorId: number;
   eventosActivos: number;
@@ -262,6 +271,7 @@ export interface DashboardOrganizador {
   serieMensualInscripciones: PuntoSerie[];
 }
 
+// Resumen numérico del panel del administrador
 export interface DashboardAdmin {
   eventosActivos: number;
   eventosPendientes: number;

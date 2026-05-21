@@ -1,3 +1,8 @@
+// Archivo `layout/shell/shell-layout.component.ts` — estructura general (menú, cabecera): shell layout.
+/**
+ * Layout principal (shell) de la app cuando el usuario ya inició sesión.
+ * Muestra sidebar, menú según rol, buscador, notificaciones y el router-outlet de las páginas internas.
+ */
 import { Component, computed, inject, OnDestroy, OnInit, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
@@ -43,6 +48,7 @@ interface ItemNavegacion {
   styleUrl: './shell-layout.component.scss'
 })
 export class ShellLayoutComponent implements OnInit, OnDestroy {
+  // Servicios: login/logout, rutas y estado del usuario y notificaciones
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   readonly store = inject(AuthStore);
@@ -52,16 +58,18 @@ export class ShellLayoutComponent implements OnInit, OnDestroy {
   private readonly mqListener = () =>
     this.pantallaGrande.set(this.mqEscritorio?.matches ?? false);
 
-  /** Desde 1024px el sidebar va en el flujo (estático); en pantallas pequeñas es drawer fijo. */
+  // Signal: true si la pantalla es ancha (sidebar fijo), false en móvil (drawer)
   readonly pantallaGrande = signal(
     typeof window !== 'undefined' && window.innerWidth >= 1024
   );
 
+  // Signal: controla si el menú lateral está abierto en móvil
   readonly sidebarAbierto = signal(false);
   textoBusqueda = '';
   readonly anio = new Date().getFullYear();
 
   ngOnInit() {
+    // Arranca el polling de notificaciones (API en segundo plano)
     this.notif.iniciarPolling();
     this.mqEscritorio = window.matchMedia('(min-width: 1024px)');
     this.pantallaGrande.set(this.mqEscritorio.matches);
@@ -79,6 +87,7 @@ export class ShellLayoutComponent implements OnInit, OnDestroy {
     if (window.innerWidth < 1024) this.sidebarAbierto.set(false);
   }
 
+  /** Navega al listado de eventos del rol actual con el texto de búsqueda en queryParams. */
   buscar() {
     const q = this.textoBusqueda.trim();
     if (!q) return;
@@ -90,12 +99,13 @@ export class ShellLayoutComponent implements OnInit, OnDestroy {
     this.router.navigate([destino], { queryParams: { q } });
   }
 
-  /** Si el rol no tiene búsqueda asociada, mejor ocultarla. */
+  // Computed: solo algunos roles ven el buscador del header
   readonly mostrarBuscador = computed(() => {
     const rol = this.store.rol();
     return rol === 'ASISTENTE' || rol === 'ADMIN' || rol === 'ORGANIZADOR';
   });
 
+  /** Cierra sesión (API auth) y manda al login. */
   cerrarSesion() {
     this.auth.logout();
     this.router.navigate(['/login']);
@@ -134,6 +144,7 @@ export class ShellLayoutComponent implements OnInit, OnDestroy {
     { etiqueta: 'Auditoría', icono: 'pi-shield', ruta: '/admin/auditoria', roles: ['ADMIN'] }
   ];
 
+  // Computed: filtra el menú lateral según el rol del usuario logueado
   readonly itemsVisibles = computed(() => {
     const rol = this.store.rol();
     if (!rol) return [];

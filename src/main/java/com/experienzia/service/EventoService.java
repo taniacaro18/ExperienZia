@@ -8,6 +8,10 @@ import com.experienzia.spec.EventoSpecification.EventoSearchCriteria;
 import java.time.LocalDateTime;
 import java.util.List;
 
+/**
+ * Interfaz del servicio EventoService.
+ * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
+ */
 public interface EventoService {
     EventoDTO crear(EventoDTO dto);
     EventoDTO editar(Long id, EventoDTO dto);

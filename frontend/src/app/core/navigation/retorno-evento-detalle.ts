@@ -1,7 +1,5 @@
-/**
- * Origen de retorno desde el detalle de evento (`/eventos/:id`).
- * Solo se aceptan claves de esta lista (evita open redirect por query arbitraria).
- */
+// Mapa de "de dónde volver" al salir del detalle de evento (/eventos/:id)
+// Solo usamos estas claves en la URL para no redirigir a sitios raros
 export const RETORNO_EVENTO_DETALLE: Record<string, { path: string; label: string }> = {
   'mis-inscripciones': { path: '/mis-inscripciones', label: 'Volver a mis inscripciones' },
   eventos: { path: '/eventos', label: 'Volver al catálogo' },
@@ -10,6 +8,7 @@ export const RETORNO_EVENTO_DETALLE: Record<string, { path: string; label: strin
   'admin-eventos': { path: '/admin/eventos', label: 'Volver a administración de eventos' }
 };
 
+// Dado un ?retorno= en la URL, devuelve path y texto del botón "Volver"
 export function destinoRetornoEventoDetalle(
   key: string | null | undefined
 ): { path: string; label: string } | null {

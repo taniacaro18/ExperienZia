@@ -1,3 +1,4 @@
+// Archivo `pages/asistente/mis-certificados.page.ts` — pages: mis certificados.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ButtonModule } from 'primeng/button';

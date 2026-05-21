@@ -1,15 +1,16 @@
 package com.experienzia.entity;
 
 /**
- * Función específica que cumple un STAFF dentro de un evento (visible en el diseño Figma).
- * - CHECK_IN_QR: lectura de QR de asistentes en el ingreso.
- * - CHECK_IN_MANUAL: registro manual de asistentes en el ingreso.
- * - REGISTRO_SALIDA: marca de check-out a la salida del evento.
- * - GENERAL: cualquier responsabilidad combinada (valor por defecto si no se especifica).
+ * Enum (no es tabla): indica qué tarea hace un STAFF en un evento concreto.
+ * Se guarda como texto en {@link StaffEventoAsignacion}.
  */
 public enum FuncionStaff {
+    /** Escanear el código QR del asistente al entrar. */
     CHECK_IN_QR,
+    /** Registrar entrada a mano sin QR. */
     CHECK_IN_MANUAL,
+    /** Marcar la salida (check-out) del asistente. */
     REGISTRO_SALIDA,
+    /** Varias tareas o sin rol fijo; valor por defecto. */
     GENERAL
 }

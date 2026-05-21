@@ -1,3 +1,4 @@
+// Archivo `pages/common/notificaciones.page.ts` — pages: notificaciones.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';

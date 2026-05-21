@@ -1,6 +1,11 @@
+// Archivo `shared/evento-catalogo.helpers.ts` — componente reutilizable: evento catalogo.helpers.
+/**
+ * Helpers de fechas para el catálogo de eventos.
+ * Calculan si un evento sigue vigente según el reloj del navegador (sin API).
+ */
 import { Evento } from '../core/models/domain.models';
 
-/** Marca de tiempo (ms) del fin de ventana del evento: `fechaFin` coherente o inicio + duración. */
+/** Calcula en milisegundos cuándo termina el evento (fechaFin o inicio + duración) */
 export function instanteFinEventoMs(e: Evento): number {
   const inicioMs = new Date(e.fecha).getTime();
   if (e.fechaFin) {

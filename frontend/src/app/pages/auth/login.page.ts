@@ -1,3 +1,4 @@
+// Archivo `pages/auth/login.page.ts` — pages: login.
 import { Component, HostListener, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';

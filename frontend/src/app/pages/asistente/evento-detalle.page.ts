@@ -1,3 +1,4 @@
+// Archivo `pages/asistente/evento-detalle.page.ts` — pages: evento detalle.
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe } from '@angular/common';

@@ -1,3 +1,4 @@
+// Archivo `pages/admin/auditoria.page.ts` — pages: auditoria.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

@@ -1,12 +1,10 @@
+// Interceptor HTTP: cuando el API falla muestra un toast con el error
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
 import { MessageService } from 'primeng/api';
 import { catchError, throwError } from 'rxjs';
 
-/**
- * Interceptor global: traduce errores HTTP a toasts y deja pasar la excepción
- * para que cada componente decida si reacciona.
- */
+// Header especial: si una petición lo lleva, no mostramos toast (ej. 404 esperado)
 export const SKIP_GLOBAL_TOAST = 'X-Skip-Global-Toast';
 
 export const errorInterceptor: HttpInterceptorFn = (req, next) => {
@@ -16,6 +14,7 @@ export const errorInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(cleanReq).pipe(
     catchError((err: HttpErrorResponse) => {
+      // Mostramos mensaje amigable según el código HTTP (400, 401, 500...)
       if (!skipToast) {
         const mensaje = extraerMensaje(err);
         if (messageService) {

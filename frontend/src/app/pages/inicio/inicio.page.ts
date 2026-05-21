@@ -1,3 +1,4 @@
+// Archivo `pages/inicio/inicio.page.ts` — pages: inicio.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';

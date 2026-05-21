@@ -1,3 +1,4 @@
+// Archivo `app.spec.ts` — app.spec: app.spec.
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import { App } from './app';

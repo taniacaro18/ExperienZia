@@ -54,6 +54,10 @@ import java.util.Optional;
 
 @Service
 @Transactional
+/**
+ * Clase de implementación del módulo Evento.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class EventoServiceImpl implements EventoService {
 
     /** Aforo máximo permitido por evento (regla de negocio). */
@@ -75,19 +79,30 @@ public class EventoServiceImpl implements EventoService {
 
     private static final double PENALIZACION_POR_HORA_REDUCIDA = 0.05;
 
+    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
+    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
+    /** Dato del campo pago repository */
     private final PagoRepository pagoRepository;
+    /** Dato del campo evento novedad repository */
     private final EventoNovedadRepository eventoNovedadRepository;
+    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
+    /** Dato del campo inscripcion service */
     private final InscripcionService inscripcionService;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
+    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
+    /** Dato del campo object mapper */
     private final ObjectMapper objectMapper;
+    /** Dato del campo file storage service */
     private final FileStorageService fileStorageService;
 
     /** Tarifa por hora del evento (configurable). El costo se calcula como precioHora * duracionHoras. */
     @Value("${experienzia.precio-por-hora:100000}")
+    /** Dato del campo precio por hora */
     private double precioPorHora;
 
     /**
@@ -95,6 +110,7 @@ public class EventoServiceImpl implements EventoService {
      * (catálogo público, marcar FINALIZADO, etc.). Por defecto Colombia.
      */
     @Value("${experienzia.eventos.zona-horaria:America/Bogota}")
+    /** Dato del campo zona horaria eventos */
     private String zonaHorariaEventos;
 
     public EventoServiceImpl(EventoRepository eventoRepository,
@@ -120,6 +136,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `crear` (lógica del servicio). */
     public EventoDTO crear(EventoDTO dto) {
         if (dto.getOrganizadorId() == null) {
             throw new CustomException("El organizador es requerido.", HttpStatus.BAD_REQUEST);
@@ -149,6 +166,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `editar` (lógica del servicio). */
     public EventoDTO editar(Long id, EventoDTO dto) {
         marcarEventosActivosFinalizados();
         Evento evento = buscarPorId(id);
@@ -872,6 +890,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `aprobar` (lógica del servicio). */
     public EventoDTO aprobar(Long id) {
         Evento evento = buscarPorId(id);
         assertUbicacionDisponible(
@@ -918,6 +937,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `rechazar` (lógica del servicio). */
     public EventoDTO rechazar(Long id, String motivo) {
         Evento evento = buscarPorId(id);
         if (evento.getEstado() == EstadoEvento.PENDIENTE_REVISION) {
@@ -947,6 +967,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `cancelar` (lógica del servicio). */
     public EventoDTO cancelar(Long id, Long organizadorId, String motivo) {
         Evento evento = buscarPorId(id);
         if (evento.getOrganizadorId() == null || !evento.getOrganizadorId().equals(organizadorId)) {
@@ -1001,6 +1022,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `aprobarCancelacion` (lógica del servicio). */
     public EventoDTO aprobarCancelacion(Long id) {
         Evento evento = buscarPorId(id);
         if (evento.getEstado() != EstadoEvento.PENDIENTE_CANCELACION) {
@@ -1025,6 +1047,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `rechazarCancelacion` (lógica del servicio). */
     public EventoDTO rechazarCancelacion(Long id, String motivo) {
         if (motivo == null || motivo.isBlank()) {
             throw new CustomException("El motivo de rechazo es obligatorio.", HttpStatus.BAD_REQUEST);
@@ -1066,6 +1089,7 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /** Ejecuta `activarPorPago` (lógica del servicio). */
     public EventoDTO activarPorPago(Long id) {
         Evento evento = buscarPorId(id);
         if (evento.getEstado() != EstadoEvento.APROBADO) {
@@ -1077,6 +1101,7 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /** Ejecuta `activarTrasSuplementoPago` (lógica del servicio). */
     public EventoDTO activarTrasSuplementoPago(Long eventoId) {
         Evento evento = buscarPorId(eventoId);
         if (evento.getEstado() != EstadoEvento.PENDIENTE_SUPLEMENTO) {
@@ -1094,6 +1119,7 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
+    /** Ejecuta `resolverComplementoPagoSobreEventoActivo` (lógica del servicio). */
     public void resolverComplementoPagoSobreEventoActivo(Long eventoId) {
         Evento evento = buscarPorId(eventoId);
         if (evento.getEstado() != EstadoEvento.ACTIVO) {
@@ -1137,6 +1163,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `listarNovedades` (lógica del servicio). */
     public List<EventoNovedadDTO> listarNovedades(Long eventoId) {
         return eventoNovedadRepository.findByEventoIdOrderByFechaSolicitudDesc(eventoId).stream()
                 .map(this::toNovedadDto)
@@ -1158,6 +1185,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `obtenerPorId` (lógica del servicio). */
     public EventoDTO obtenerPorId(Long id) {
         marcarEventosActivosFinalizados();
         Evento evento = buscarPorId(id);
@@ -1169,12 +1197,14 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `listarTodos` (lógica del servicio). */
     public List<EventoDTO> listarTodos() {
         marcarEventosActivosFinalizados();
         return eventoRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Override
+    /** Ejecuta `listarCatalogoPublicoActivo` (lógica del servicio). */
     public List<EventoDTO> listarCatalogoPublicoActivo() {
         marcarEventosActivosFinalizados();
         return eventoRepository.findByTipoEventoAndEstado(TipoEvento.PUBLICO, EstadoEvento.ACTIVO)
@@ -1185,6 +1215,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `obtenerParaCatalogoPublico` (lógica del servicio). */
     public EventoDTO obtenerParaCatalogoPublico(Long id) {
         marcarEventosActivosFinalizados();
         Evento e = buscarPorId(id);
@@ -1200,12 +1231,14 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `listarPorOrganizador` (lógica del servicio). */
     public List<EventoDTO> listarPorOrganizador(Long organizadorId) {
         marcarEventosActivosFinalizados();
         return eventoRepository.findByOrganizadorId(organizadorId).stream().map(this::toDto).toList();
     }
 
     @Override
+    /** Ejecuta `buscar` (lógica del servicio). */
     public List<EventoDTO> buscar(EventoSearchCriteria c) {
         marcarEventosActivosFinalizados();
         Specification<Evento> spec = Specification.where(EventoSpecification.hasNombre(c.getNombre()))
@@ -1219,6 +1252,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `aumentarAforo` (lógica del servicio). */
     public void aumentarAforo(Long eventoId) {
         Evento evento = buscarPorId(eventoId);
         if (evento.getAforoActual() >= evento.getAforoMaximo()) {
@@ -1229,6 +1263,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `disminuirAforo` (lógica del servicio). */
     public void disminuirAforo(Long eventoId) {
         Evento evento = buscarPorId(eventoId);
         if (evento.getAforoActual() <= 0) {
@@ -1240,6 +1275,7 @@ public class EventoServiceImpl implements EventoService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `consultarDisponibilidadSalon` (lógica del servicio). */
     public DisponibilidadSalonDTO consultarDisponibilidadSalon(
             String ubicacion,
             LocalDateTime desde,
@@ -1320,6 +1356,7 @@ public class EventoServiceImpl implements EventoService {
     }
 
     @Override
+    /** Ejecuta `marcarEventosActivosFinalizados` (lógica del servicio). */
     public void marcarEventosActivosFinalizados() {
         for (Evento e : eventoRepository.findByEstado(EstadoEvento.ACTIVO)) {
             if (eventoHaFinalizadoSuVentana(e)) {

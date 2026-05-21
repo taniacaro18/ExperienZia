@@ -1,8 +1,13 @@
 package com.experienzia.entity;
 
-/** Resolución de un registro en el historial de novedades del evento. */
+/**
+ * Enum: si una solicitud en {@link EventoNovedad} ya fue resuelta por el administrador.
+ */
 public enum EstadoNovedadEvento {
+    /** El admin aún no decidió. */
     PENDIENTE,
+    /** Se aplicó el cambio solicitado. */
     APROBADO,
+    /** No se aplicó el cambio. */
     RECHAZADO
 }

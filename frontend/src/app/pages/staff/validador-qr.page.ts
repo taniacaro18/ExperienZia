@@ -1,3 +1,4 @@
+// Archivo `pages/staff/validador-qr.page.ts` — pages: validador qr.
 import { AfterViewInit, Component, ElementRef, OnDestroy, OnInit, computed, inject, signal, viewChild } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

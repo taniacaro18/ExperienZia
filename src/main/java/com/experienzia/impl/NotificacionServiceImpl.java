@@ -16,9 +16,15 @@ import java.util.List;
 
 @Service
 @Transactional
+/**
+ * Clase de implementación del módulo Notificacion.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class NotificacionServiceImpl implements NotificacionService {
 
+    /** Dato del campo notificacion repository */
     private final NotificacionRepository notificacionRepository;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
 
     public NotificacionServiceImpl(NotificacionRepository notificacionRepository, ModelMapper modelMapper) {
@@ -27,6 +33,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     }
 
     @Override
+    /** Ejecuta `crear` (lógica del servicio). */
     public NotificacionDTO crear(Long usuarioId, String mensaje, TipoNotificacion tipo) {
         Notificacion notificacion = new Notificacion();
         notificacion.setUsuarioId(usuarioId);
@@ -39,6 +46,7 @@ public class NotificacionServiceImpl implements NotificacionService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorUsuario` (lógica del servicio). */
     public List<NotificacionDTO> listarPorUsuario(Long usuarioId) {
         return notificacionRepository.findByUsuarioIdOrderByFechaDesc(usuarioId).stream()
                 .map(n -> modelMapper.map(n, NotificacionDTO.class))
@@ -46,6 +54,7 @@ public class NotificacionServiceImpl implements NotificacionService {
     }
 
     @Override
+    /** Ejecuta `marcarLeida` (lógica del servicio). */
     public NotificacionDTO marcarLeida(Long id) {
         Notificacion notificacion = notificacionRepository.findById(id)
                 .orElseThrow(() -> new CustomException("Notificación no encontrada.", HttpStatus.NOT_FOUND));

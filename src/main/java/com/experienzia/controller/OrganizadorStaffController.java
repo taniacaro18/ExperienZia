@@ -14,7 +14,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /** HU-004: el organizador puede activar/desactivar al STAFF que él creó. */
+// Controlador para que el organizador gestione a su personal (staff)
 @RestController
+// La URL base incluye el id del organizador en la ruta
 @RequestMapping("/api/organizadores/{organizadorId}/staff")
 public class OrganizadorStaffController {
 
@@ -30,11 +32,15 @@ public class OrganizadorStaffController {
         this.auditoriaService = auditoriaService;
     }
 
+    // PUT .../staff/{staffId}/desactivar — el organizador desactiva a un miembro de su staff
     @PutMapping("/{staffId}/desactivar")
-    public ResponseEntity<UsuarioDTO> desactivar(@PathVariable Long organizadorId,
-                                                 @PathVariable Long staffId,
-                                                 HttpServletRequest request) {
+    public ResponseEntity<UsuarioDTO> desactivar(
+            @PathVariable Long organizadorId,
+            @PathVariable Long staffId,
+            // HttpServletRequest nos da datos de la petición (aquí usamos la IP para auditoría)
+            HttpServletRequest request) {
         UsuarioDTO u = usuarioService.desactivarStaffPorOrganizador(organizadorId, staffId);
+        // Avisamos al staff con una notificación dentro de la app
         notificacionService.crear(u.getId(),
                 "El organizador desactivó tu cuenta de staff. Ya no podrás iniciar sesión hasta que sea reactivada.",
                 TipoNotificacion.ALERTA);
@@ -43,6 +49,7 @@ public class OrganizadorStaffController {
         return ResponseEntity.ok(u);
     }
 
+    // PUT .../staff/{staffId}/reactivar — vuelve a activar la cuenta del staff
     @PutMapping("/{staffId}/reactivar")
     public ResponseEntity<UsuarioDTO> reactivar(@PathVariable Long organizadorId,
                                                 @PathVariable Long staffId,

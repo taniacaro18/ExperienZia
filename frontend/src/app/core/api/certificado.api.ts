@@ -1,3 +1,4 @@
+// Cliente HTTP para certificados de asistencia
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -9,6 +10,7 @@ export class CertificadoApi {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl + '/api/certificados';
 
+  // Generar certificado para una inscripción
   generar(inscripcionId: number): Observable<Certificado> {
     return this.http.post<Certificado>(this.base + '/generar/' + inscripcionId, null);
   }
@@ -17,10 +19,12 @@ export class CertificadoApi {
     return this.http.get<Certificado[]>(this.base + '/usuario/' + usuarioId);
   }
 
+  // Comprobar si un código de certificado es válido
   validar(codigo: string): Observable<Certificado> {
     return this.http.get<Certificado>(this.base + '/validar/' + codigo);
   }
 
+  // Crear certificados para todos los que asistieron al evento
   generarMasivo(eventoId: number, organizadorId?: number): Observable<Certificado[]> {
     const params = organizadorId
       ? new HttpParams().set('organizadorId', String(organizadorId))

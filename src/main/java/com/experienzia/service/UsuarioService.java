@@ -10,57 +10,70 @@ import com.experienzia.spec.UsuarioSpecification.UsuarioSearchCriteria;
 
 import java.util.List;
 
+/**
+ * Interfaz del servicio de usuarios.
+ * Gestiona registro, login, perfiles, roles y el ciclo de vida de las cuentas.
+ */
+/**
+ * Interfaz del servicio UsuarioService.
+ * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
+ */
 public interface UsuarioService {
 
-    /** HU-001 / HU-002: registro público. dto.tipo decide ASISTENTE u ORGANIZADOR. */
+    /**
+     * Registro público (HU-001 / HU-002).
+     * El campo tipo del DTO decide si es ASISTENTE u ORGANIZADOR.
+     */
     UsuarioDTO registrar(UsuarioDTO dto);
 
-    /** HU-003: inicio de sesión. */
+    /** Inicio de sesión con email y contraseña (HU-003). */
     UsuarioDTO login(LoginDTO dto);
 
-    /** HU-004: creación de STAFF por un organizador. */
+    /** Un organizador crea una cuenta de personal STAFF (HU-004). */
     UsuarioDTO crearStaff(CrearStaffDTO dto);
 
-    /** HU-002a: el admin aprueba un organizador pendiente. */
+    /** El admin aprueba un organizador que estaba PENDIENTE (HU-002a). */
     UsuarioDTO aprobarOrganizador(Long id);
 
-    /** HU-002b: el admin rechaza un organizador pendiente. */
+    /** El admin rechaza un organizador pendiente (HU-002b). */
     UsuarioDTO rechazarOrganizador(Long id);
 
-    /** El admin desactiva una cuenta. */
+    /** El admin desactiva una cuenta (pasa a INACTIVO). */
     UsuarioDTO desactivar(Long id);
 
-    /** HU-019: el admin reactiva una cuenta INACTIVA. */
+    /** El admin reactiva una cuenta que estaba INACTIVA (HU-019). */
     UsuarioDTO reactivar(Long id);
 
-    /** HU-004: el organizador desactiva la cuenta de un STAFF que él creó. */
+    /** El organizador desactiva un STAFF que él mismo creó. */
     UsuarioDTO desactivarStaffPorOrganizador(Long organizadorId, Long staffId);
 
-    /** HU-004: el organizador reactiva la cuenta de un STAFF que él creó. */
+    /** El organizador reactiva un STAFF que él mismo creó. */
     UsuarioDTO reactivarStaffPorOrganizador(Long organizadorId, Long staffId);
 
-    /** HU-018: el admin cambia el rol y/o el estado de un usuario. */
+    /** El admin cambia el rol de un usuario (HU-018). */
     UsuarioDTO cambiarRol(Long id, String nuevoRol);
 
-    /** HU-005: ver perfil. */
+    /** Ver los datos de un usuario por su id (HU-005). */
     UsuarioDTO obtenerPorId(Long id);
 
-    /** HU-005: editar perfil (solo teléfono y contraseña). */
+    /** Editar teléfono y/o contraseña del perfil propio (HU-005). */
     UsuarioDTO actualizarPerfil(Long id, ActualizarPerfilDTO dto);
 
-    /** HU-006: recuperación de contraseña sin correo (devuelve la temporal). */
+    /**
+     * Recuperar contraseña sin enviar correo: devuelve una contraseña temporal
+     * si el email y documento coinciden (HU-006).
+     */
     RecuperarPasswordResponseDTO recuperarPassword(RecuperarPasswordDTO dto);
 
     /**
-     * Reenvía las credenciales iniciales de un asistente cargado masivamente:
-     * resetea su contraseña al número de documento (o genera una temporal si no tiene)
-     * y notifica al usuario por el sistema.
+     * Reenvía credenciales a un asistente cargado en masa:
+     * resetea la contraseña al número de documento (o una temporal) y notifica.
      */
     RecuperarPasswordResponseDTO reenviarCredenciales(Long usuarioId);
 
-    /** Listado completo (admin). */
+    /** Listado de todos los usuarios (solo uso admin). */
     List<UsuarioDTO> listarTodos();
 
-    /** Búsqueda por criterios libres (nombre, email, rol, estado, organizadorId). */
+    /** Busca usuarios por nombre, email, rol, estado u organizadorId. */
     List<UsuarioDTO> buscarPorCriterios(UsuarioSearchCriteria criteria);
 }

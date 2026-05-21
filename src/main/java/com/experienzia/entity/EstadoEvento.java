@@ -1,13 +1,20 @@
 package com.experienzia.entity;
 
+/**
+ * Enum del ciclo de vida de un {@link Evento}. Controla qué acciones están permitidas.
+ */
 public enum EstadoEvento {
     /** Solicitud inicial de evento nuevo (sin pago aún o flujo clásico). */
     PENDIENTE,
+    /** Admin aceptó el evento pero puede faltar activación/pago. */
     APROBADO,
+    /** Admin rechazó la publicación. */
     RECHAZADO,
+    /** Evento visible y abierto a inscripciones (según reglas). */
     ACTIVO,
     /** El evento ya ocurrió (ventana de inicio–fin cerrada). */
     FINALIZADO,
+    /** Evento cancelado y no se realizará. */
     CANCELADO,
     /**
      * Edición de un evento ya activo/aprobado que no implica suplemento de pago por horas

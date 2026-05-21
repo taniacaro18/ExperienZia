@@ -1,8 +1,10 @@
+// Guards de rutas: bloquean o permiten entrar a una página según el login y el rol
 import { inject } from '@angular/core';
 import { CanActivateFn, Router } from '@angular/router';
 import { Rol } from '../models/domain.models';
 import { AuthStore } from './auth.store';
 
+// Solo deja pasar si ya iniciaste sesión; si no, te manda al login
 export const authGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
   const router = inject(Router);
@@ -11,6 +13,7 @@ export const authGuard: CanActivateFn = () => {
   return false;
 };
 
+// Solo deja pasar si tu rol está en la lista (ej. solo ORGANIZADOR)
 export const rolGuard = (rolesPermitidos: Rol[]): CanActivateFn => {
   return () => {
     const auth = inject(AuthStore);
@@ -22,6 +25,7 @@ export const rolGuard = (rolesPermitidos: Rol[]): CanActivateFn => {
   };
 };
 
+// Para login/registro: si ya estás logueado te manda al inicio
 export const noAuthGuard: CanActivateFn = () => {
   const auth = inject(AuthStore);
   const router = inject(Router);

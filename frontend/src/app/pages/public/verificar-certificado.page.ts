@@ -1,3 +1,4 @@
+// Archivo `pages/public/verificar-certificado.page.ts` — pages: verificar certificado.
 import { Component, inject, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

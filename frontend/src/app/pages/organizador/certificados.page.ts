@@ -1,3 +1,4 @@
+// Archivo `pages/organizador/certificados.page.ts` — pages: certificados.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

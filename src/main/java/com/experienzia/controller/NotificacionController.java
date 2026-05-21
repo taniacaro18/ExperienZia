@@ -20,6 +20,7 @@ import java.util.List;
  *  - se crea una inscripción masiva (a cada nuevo asistente)
  *  - hay actividad de aprobación/rechazo de un organizador (al organizador)
  */
+// Controlador para leer y marcar notificaciones dentro de la aplicación
 @RestController
 @RequestMapping("/api/notificaciones")
 public class NotificacionController {
@@ -31,12 +32,14 @@ public class NotificacionController {
     }
 
     /** Lista todas las notificaciones de un usuario (más recientes primero). */
+    // GET /api/notificaciones/{usuarioId}
     @GetMapping("/{usuarioId}")
     public ResponseEntity<List<NotificacionDTO>> listar(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(notificacionService.listarPorUsuario(usuarioId));
     }
 
     /** Marca una notificación como leída. */
+    // PUT /api/notificaciones/{id}/leida — actualiza el estado de una notificación concreta
     @PutMapping("/{id}/leida")
     public ResponseEntity<NotificacionDTO> marcarLeida(@PathVariable Long id) {
         return ResponseEntity.ok(notificacionService.marcarLeida(id));

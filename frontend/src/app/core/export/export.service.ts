@@ -1,3 +1,4 @@
+// Servicio para exportar tablas a Excel, PDF y leer archivos de carga masiva
 import { Injectable } from '@angular/core';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
@@ -14,13 +15,9 @@ export interface ColumnaExport<T> {
   value: (row: T) => string | number | null | undefined;
 }
 
-/**
- * Servicio centralizado para exportar listados a Excel (.xlsx) y PDF.
- * También sirve para descargar plantillas .xlsx con encabezados y filas de ejemplo.
- */
 @Injectable({ providedIn: 'root' })
 export class ExportService {
-  /** Exporta un listado a un archivo .xlsx. */
+  // Descargar un Excel con columnas y filas que le pasemos
   exportarExcel<T>(filename: string, sheetName: string, columnas: ColumnaExport<T>[], rows: T[]) {
     const headers = columnas.map((c) => c.header);
     const data = rows.map((r) => columnas.map((c) => c.value(r) ?? ''));

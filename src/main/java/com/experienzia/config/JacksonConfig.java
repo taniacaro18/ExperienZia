@@ -6,17 +6,22 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 
 /**
- * Spring Boot 4 + webmvc no siempre expone {@link ObjectMapper} como bean;
- * servicios como {@link com.experienzia.impl.EventoServiceImpl} lo necesitan para novedades JSON.
+ * Crea el ObjectMapper de Jackson como bean de Spring.
+ * A veces Spring Boot no lo registra solo y otros servicios lo necesitan
+ * (por ejemplo para guardar/leer JSON de novedades de eventos).
  */
 @Configuration
 public class JacksonConfig {
 
-    @Bean
-    @Primary
-    public ObjectMapper objectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.findAndRegisterModules();
-        return mapper;
-    }
+	/**
+	 * ObjectMapper principal: convierte objetos Java ↔ JSON.
+	 */
+	@Bean
+	@Primary // si hay varios ObjectMapper, este es el que usa Spring por defecto
+	public ObjectMapper objectMapper() {
+		ObjectMapper mapper = new ObjectMapper();
+		// registra módulos extra (fechas Java 8, etc.) si están en el classpath
+		mapper.findAndRegisterModules();
+		return mapper;
+	}
 }

@@ -13,9 +13,15 @@ import java.util.List;
 
 @Service
 @Transactional
+/**
+ * Clase de implementación del módulo Auditoria.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class AuditoriaServiceImpl implements AuditoriaService {
 
+    /** Dato del campo auditoria repository */
     private final AuditoriaRepository auditoriaRepository;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
 
     public AuditoriaServiceImpl(AuditoriaRepository auditoriaRepository, ModelMapper modelMapper) {
@@ -24,6 +30,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
     }
 
     @Override
+    /** Ejecuta `registrar` (lógica del servicio). */
     public AuditoriaDTO registrar(Long usuarioId, String accion, String entidad, Long entidadId, String direccionIp) {
         if (accion == null || accion.trim().isEmpty()) {
             throw new IllegalArgumentException("La acción de auditoría no puede estar vacía.");
@@ -43,6 +50,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarTodo` (lógica del servicio). */
     public List<AuditoriaDTO> listarTodo() {
         return auditoriaRepository.findAllByOrderByFechaDesc().stream()
                 .map(a -> modelMapper.map(a, AuditoriaDTO.class))
@@ -51,6 +59,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorUsuario` (lógica del servicio). */
     public List<AuditoriaDTO> listarPorUsuario(Long usuarioId) {
         return auditoriaRepository.findByUsuarioIdOrderByFechaDesc(usuarioId).stream()
                 .map(a -> modelMapper.map(a, AuditoriaDTO.class))
@@ -59,6 +68,7 @@ public class AuditoriaServiceImpl implements AuditoriaService {
 
     @Override
     @Transactional(readOnly = true)
+    /** Ejecuta `listarPorEntidad` (lógica del servicio). */
     public List<AuditoriaDTO> listarPorEntidad(String entidad) {
         return auditoriaRepository.findByEntidadOrderByFechaDesc(entidad).stream()
                 .map(a -> modelMapper.map(a, AuditoriaDTO.class))

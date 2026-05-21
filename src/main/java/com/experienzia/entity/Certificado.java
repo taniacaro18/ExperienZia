@@ -9,6 +9,10 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidad JPA del certificado de asistencia que recibe un usuario tras un evento.
+ * Une {@link Usuario} + {@link Evento} con un código único para verificar autenticidad.
+ */
 @Entity
 @Table(name = "certificados")
 @Data
@@ -20,10 +24,11 @@ public class Certificado {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Asistente que obtuvo el certificado. */
     @Column(name = "usuario_id", nullable = false)
     private Long usuarioId;
 
-    /** FK al usuario titular del certificado (solo para BD/ERD). */
+    /** Relación JPA al titular del certificado. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id",
             referencedColumnName = "id",
@@ -34,10 +39,11 @@ public class Certificado {
     @EqualsAndHashCode.Exclude
     private Usuario usuario;
 
+    /** Evento en el que participó y por el que se emitió el certificado. */
     @Column(name = "evento_id", nullable = false)
     private Long eventoId;
 
-    /** FK al evento al que pertenece el certificado (solo para BD/ERD). */
+    /** Relación JPA al evento asociado. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evento_id",
             referencedColumnName = "id",
@@ -48,9 +54,11 @@ public class Certificado {
     @EqualsAndHashCode.Exclude
     private Evento evento;
 
+    /** Cuándo el sistema generó el certificado. */
     @Column(name = "fecha_generacion", nullable = false)
     private LocalDateTime fechaGeneracion;
 
+    /** Código público para validar el certificado (como un número de serie). */
     @Column(name = "codigo_unico", nullable = false, unique = true, length = 100)
     private String codigoUnico;
 }

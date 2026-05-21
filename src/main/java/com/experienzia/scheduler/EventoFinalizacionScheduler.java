@@ -7,26 +7,31 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * Pasa a {@code FINALIZADO} los eventos {@code ACTIVO} cuya fecha/hora de fin ya ocurrió.
+ * Tarea automática que marca eventos como FINALIZADO
+ * cuando ya pasó su fecha/hora de fin y seguían en ACTIVO.
  */
 @Component
 public class EventoFinalizacionScheduler {
 
-    private static final Logger LOG = LoggerFactory.getLogger(EventoFinalizacionScheduler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(EventoFinalizacionScheduler.class);
 
-    private final EventoService eventoService;
+	private final EventoService eventoService;
 
-    public EventoFinalizacionScheduler(EventoService eventoService) {
-        this.eventoService = eventoService;
-    }
+	public EventoFinalizacionScheduler(EventoService eventoService) {
+		this.eventoService = eventoService;
+	}
 
-    /** Cada 10 minutos (al minuto 0, 10, 20, …). */
-    @Scheduled(cron = "0 */10 * * * *")
-    public void finalizarEventosPasados() {
-        try {
-            eventoService.marcarEventosActivosFinalizados();
-        } catch (Exception ex) {
-            LOG.warn("Marcar eventos finalizados: {}", ex.getMessage());
-        }
-    }
+	/**
+	 * Corre cada 10 minutos (minuto 0, 10, 20, 30, 40, 50 de cada hora).
+	 * La expresión cron tiene 6 campos porque Spring usa segundos también.
+	 */
+	@Scheduled(cron = "0 */10 * * * *")
+	public void finalizarEventosPasados() {
+		try {
+			eventoService.marcarEventosActivosFinalizados();
+		} catch (Exception ex) {
+			// no tiramos la excepción hacia arriba para que el scheduler siga vivo
+			LOG.warn("Marcar eventos finalizados: {}", ex.getMessage());
+		}
+	}
 }

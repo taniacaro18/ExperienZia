@@ -1,3 +1,4 @@
+// Archivo `pages/organizador/asistentes.page.ts` — pages: asistentes.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute } from '@angular/router';

@@ -1,7 +1,15 @@
+// Archivo `shared/estado.helpers.ts` — componente reutilizable: estado.helpers.
+/**
+ * Funciones auxiliares (helpers) para mostrar estados en la UI:
+ * textos en español, colores de tags PrimeNG y barra de aforo.
+ * No llaman a la API; solo transforman datos para la vista.
+ */
 import { EstadoEvento, EstadoInscripcion, EstadoPago, EstadoUsuario } from '../core/models/domain.models';
 
+/** Tipo de color que usa PrimeNG en los tags (success, warn, etc.) */
 export type Severity = 'success' | 'info' | 'warn' | 'danger' | 'secondary' | 'contrast';
 
+/** Devuelve el nombre legible del estado de un evento (ej. ACTIVO → "Activo") */
 export function eventoEstadoLabel(e: EstadoEvento | string): string {
   switch (e) {
     case 'ACTIVO': return 'Activo';
@@ -17,6 +25,7 @@ export function eventoEstadoLabel(e: EstadoEvento | string): string {
   }
 }
 
+/** Elige el color del tag según el estado del evento */
 export function eventoEstadoSeverity(e: EstadoEvento | string): Severity {
   switch (e) {
     case 'ACTIVO': return 'success';

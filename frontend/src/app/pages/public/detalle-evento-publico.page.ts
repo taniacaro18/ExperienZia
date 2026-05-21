@@ -1,3 +1,4 @@
+// Archivo `pages/public/detalle-evento-publico.page.ts` — pages: detalle evento publico.
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { ActivatedRoute, RouterLink } from '@angular/router';

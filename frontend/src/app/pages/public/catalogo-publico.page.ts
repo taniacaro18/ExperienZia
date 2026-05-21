@@ -1,3 +1,4 @@
+// Archivo `pages/public/catalogo-publico.page.ts` — pages: catalogo publico.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

@@ -30,6 +30,10 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
+/**
+ * Clase de implementación del módulo Usuario.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class UsuarioServiceImpl implements UsuarioService {
 
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
@@ -40,9 +44,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     private static final String ALFABETO_PASS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
     private static final SecureRandom RANDOM = new SecureRandom();
 
+    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
+    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
+    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
+    /** Dato del campo password encoder */
     private final PasswordEncoder passwordEncoder;
 
     public UsuarioServiceImpl(UsuarioRepository usuarioRepository,
@@ -56,6 +64,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `registrar` (lógica del servicio). */
     public UsuarioDTO registrar(UsuarioDTO dto) {
         validarDatosObligatorios(dto.getNombre(), dto.getEmail(), dto.getPassword());
         validarFormatoRegistro(dto);
@@ -87,6 +96,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `login` (lógica del servicio). */
     public UsuarioDTO login(LoginDTO dto) {
         if (dto.getEmail() == null || dto.getPassword() == null) {
             throw new CustomException("Email y contraseña son obligatorios.");
@@ -111,6 +121,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `crearStaff` (lógica del servicio). */
     public UsuarioDTO crearStaff(CrearStaffDTO dto) {
         if (dto.getOrganizadorId() == null) {
             throw new CustomException("organizadorId es obligatorio.");
@@ -143,6 +154,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `aprobarOrganizador` (lógica del servicio). */
     public UsuarioDTO aprobarOrganizador(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getRol() != Rol.ORGANIZADOR) {
@@ -157,6 +169,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `rechazarOrganizador` (lógica del servicio). */
     public UsuarioDTO rechazarOrganizador(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getRol() != Rol.ORGANIZADOR) {
@@ -171,6 +184,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `desactivar` (lógica del servicio). */
     public UsuarioDTO desactivar(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getEstado() == Estado.INACTIVO) {
@@ -181,6 +195,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `reactivar` (lógica del servicio). */
     public UsuarioDTO reactivar(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getEstado() == Estado.ACTIVO) {
@@ -195,6 +210,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `desactivarStaffPorOrganizador` (lógica del servicio). */
     public UsuarioDTO desactivarStaffPorOrganizador(Long organizadorId, Long staffId) {
         Usuario staff = validarStaffDelOrganizador(organizadorId, staffId);
         if (staff.getEstado() == Estado.INACTIVO) {
@@ -205,6 +221,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `reactivarStaffPorOrganizador` (lógica del servicio). */
     public UsuarioDTO reactivarStaffPorOrganizador(Long organizadorId, Long staffId) {
         Usuario staff = validarStaffDelOrganizador(organizadorId, staffId);
         if (staff.getEstado() == Estado.ACTIVO) {
@@ -238,6 +255,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `cambiarRol` (lógica del servicio). */
     public UsuarioDTO cambiarRol(Long id, String nuevoRol) {
         if (nuevoRol == null || nuevoRol.isBlank()) {
             throw new CustomException("El rol es obligatorio.");
@@ -258,11 +276,13 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `obtenerPorId` (lógica del servicio). */
     public UsuarioDTO obtenerPorId(Long id) {
         return toDto(buscarOFallar(id));
     }
 
     @Override
+    /** Ejecuta `actualizarPerfil` (lógica del servicio). */
     public UsuarioDTO actualizarPerfil(Long id, ActualizarPerfilDTO dto) {
         Usuario u = buscarOFallar(id);
         if (dto.getTelefono() != null) {
@@ -297,6 +317,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `recuperarPassword` (lógica del servicio). */
     public RecuperarPasswordResponseDTO recuperarPassword(RecuperarPasswordDTO dto) {
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new CustomException("El correo electrónico es obligatorio.");
@@ -329,6 +350,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `reenviarCredenciales` (lógica del servicio). */
     public RecuperarPasswordResponseDTO reenviarCredenciales(Long usuarioId) {
         Usuario u = buscarOFallar(usuarioId);
         if (u.getEstado() != Estado.ACTIVO) {
@@ -357,6 +379,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `listarTodos` (lógica del servicio). */
     public List<UsuarioDTO> listarTodos() {
         return usuarioRepository.findAll().stream()
                 .map(this::toDto)
@@ -364,6 +387,7 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
+    /** Ejecuta `buscarPorCriterios` (lógica del servicio). */
     public List<UsuarioDTO> buscarPorCriterios(UsuarioSearchCriteria c) {
         Specification<Usuario> spec = Specification.where(UsuarioSpecification.hasNombre(c.getNombre()))
                 .and(UsuarioSpecification.hasEmail(c.getEmail()))

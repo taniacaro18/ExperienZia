@@ -15,6 +15,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// Solo el administrador usa estas rutas para gestionar usuarios del sistema
 @RestController
 @RequestMapping("/api/admin/usuarios")
 public class AdminUsuarioController {
@@ -31,10 +32,12 @@ public class AdminUsuarioController {
         this.auditoriaService = auditoriaService;
     }
 
+    // PUT /api/admin/usuarios/{id}/aprobar — aprueba la cuenta de un organizador pendiente
     @PutMapping("/{id}/aprobar")
-    public ResponseEntity<UsuarioDTO> aprobarOrganizador(@PathVariable Long id,
-                                                         @RequestParam(required = false) Long adminId,
-                                                         HttpServletRequest request) {
+    public ResponseEntity<UsuarioDTO> aprobarOrganizador(
+            @PathVariable Long id,
+            @RequestParam(required = false) Long adminId,
+            HttpServletRequest request) {
         UsuarioDTO u = usuarioService.aprobarOrganizador(id);
         notificacionService.crear(u.getId(),
                 "Tu cuenta de organizador fue aprobada. Ya puedes iniciar sesión.",
@@ -44,6 +47,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
+    // PUT /api/admin/usuarios/{id}/rechazar — rechaza la solicitud de organizador
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<UsuarioDTO> rechazarOrganizador(@PathVariable Long id,
                                                           @RequestParam(required = false) Long adminId,
@@ -57,6 +61,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
+    // PUT /api/admin/usuarios/{id}/desactivar — bloquea el acceso del usuario
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<UsuarioDTO> desactivar(@PathVariable Long id,
                                                  @RequestParam(required = false) Long adminId,
@@ -85,6 +90,7 @@ public class AdminUsuarioController {
     }
 
     /** HU-018: cambiar el rol de un usuario. */
+    // PUT /api/admin/usuarios/{id}/rol — el nuevo rol va en el JSON del cuerpo (@RequestBody)
     @PutMapping("/{id}/rol")
     public ResponseEntity<UsuarioDTO> cambiarRol(@PathVariable Long id,
                                                  @RequestBody CambiarRolDTO body,

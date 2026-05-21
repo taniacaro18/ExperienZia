@@ -1,3 +1,4 @@
+// Archivo `pages/staff/dashboard.page.ts` — pages: dashboard.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';

@@ -1,3 +1,4 @@
+// Archivo `pages/organizador/pagos.page.ts` — pages: pagos.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, CurrencyPipe, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

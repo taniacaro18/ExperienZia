@@ -9,6 +9,10 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
+/**
+ * Entidad JPA de registro de auditoría: quién hizo qué y cuándo en el sistema.
+ * Sirve para trazabilidad (seguridad, soporte, cumplimiento). Tabla {@code auditorias}.
+ */
 @Entity
 @Table(name = "auditorias")
 @Data
@@ -20,10 +24,11 @@ public class Auditoria {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Usuario que ejecutó la acción (puede ser null si fue el sistema). */
     @Column(name = "usuario_id")
     private Long usuarioId;
 
-    /** FK al usuario actor (solo para BD/ERD). */
+    /** Relación JPA opcional al usuario que actuó. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "usuario_id",
             referencedColumnName = "id",
@@ -34,15 +39,19 @@ public class Auditoria {
     @EqualsAndHashCode.Exclude
     private Usuario usuario;
 
+    /** Nombre de la operación, por ejemplo CREAR_EVENTO o APROBAR_PAGO. */
     @Column(nullable = false)
     private String accion;
 
+    /** Tipo de tabla/entidad afectada, por ejemplo Evento o Usuario. */
     @Column(nullable = false)
     private String entidad;
 
+    /** ID del registro concreto que se modificó (si aplica). */
     @Column(name = "entidad_id")
     private Long entidadId;
 
+    /** Fecha y hora del evento auditado. */
     @Column(nullable = false)
     private LocalDateTime fecha;
 

@@ -26,6 +26,7 @@ import java.util.List;
 @RequestMapping("/api/export")
 public class ExportController {
 
+    // Tipo MIME de Excel moderno (.xlsx)
     private static final MediaType XLSX = MediaType.parseMediaType(
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
 
@@ -42,6 +43,7 @@ public class ExportController {
     }
 
     /** Excel con todos los eventos del sistema (admin). */
+    // GET /api/export/eventos.xlsx — descarga Excel con el listado de eventos
     @GetMapping(value = "/eventos.xlsx")
     public ResponseEntity<ByteArrayResource> eventosExcel() {
         List<EventoDTO> lista = eventoService.listarTodos();
@@ -81,6 +83,7 @@ public class ExportController {
         return descarga(data, nombre, MediaType.APPLICATION_PDF);
     }
 
+    // Obtiene la lista de asistentes según si viene organizadorId en la petición
     private List<AsistenteEventoDTO> obtenerAsistentes(Long eventoId, Long organizadorId) {
         if (organizadorId != null) {
             return inscripcionService.listarAsistentesParaOrganizador(eventoId, organizadorId, null);
@@ -92,6 +95,7 @@ public class ExportController {
         return List.of();
     }
 
+    // Arma la respuesta HTTP para que el navegador descargue el archivo
     private ResponseEntity<ByteArrayResource> descarga(byte[] data, String filename, MediaType tipo) {
         ByteArrayResource resource = new ByteArrayResource(data);
         return ResponseEntity.ok()
@@ -101,6 +105,7 @@ public class ExportController {
                 .body(resource);
     }
 
+    // Quita caracteres raros del nombre del evento para usarlo en el nombre del archivo
     private String sanear(String nombre) {
         if (nombre == null || nombre.isBlank()) return "evento";
         return nombre.replaceAll("[^A-Za-z0-9_-]+", "_");

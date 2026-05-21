@@ -1,3 +1,4 @@
+// Archivo `shared/logo/logo.component.ts` — componente reutilizable: logo.
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 

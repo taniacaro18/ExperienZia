@@ -1,3 +1,4 @@
+// Archivo `pages/asistente/eventos-catalogo.page.ts` — pages: eventos catalogo.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule } from '@angular/forms';

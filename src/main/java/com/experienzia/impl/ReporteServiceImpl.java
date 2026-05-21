@@ -40,15 +40,24 @@ import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
+/**
+ * Clase de implementación del módulo Reporte.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class ReporteServiceImpl implements ReporteService {
 
     private static final List<String> ACCIONES_CHECK_IN_QR = List.of("CHECK_IN_QR");
     private static final List<String> ACCIONES_CHECK_IN_MANUAL = List.of("CHECK_IN");
 
+    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
+    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
+    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
+    /** Dato del campo staff evento repository */
     private final StaffEventoAsignacionRepository staffEventoRepository;
+    /** Dato del campo auditoria repository */
     private final AuditoriaRepository auditoriaRepository;
 
     public ReporteServiceImpl(InscripcionRepository inscripcionRepository,
@@ -64,6 +73,7 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerEventosPopulares` (lógica del servicio). */
     public List<EventoPopularDTO> obtenerEventosPopulares() {
         return inscripcionRepository.findEventosPopulares().stream().map(obj -> {
             Long eventoId = (Long) obj[0];
@@ -76,17 +86,20 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerAsistenciaPorEvento` (lógica del servicio). */
     public AsistenciaDTO obtenerAsistenciaPorEvento(Long eventoId) {
         long totalAsistieron = inscripcionRepository.countByEventoIdAndEstado(eventoId, EstadoInscripcion.ASISTIO);
         return new AsistenciaDTO(eventoId, totalAsistieron);
     }
 
     @Override
+    /** Ejecuta `obtenerUsuariosPorEvento` (lógica del servicio). */
     public List<Long> obtenerUsuariosPorEvento(Long eventoId) {
         return inscripcionRepository.findUsuarioIdsByEventoId(eventoId);
     }
 
     @Override
+    /** Ejecuta `obtenerResumenGeneral` (lógica del servicio). */
     public ResumenDTO obtenerResumenGeneral() {
         return new ResumenDTO(
                 usuarioRepository.count(),
@@ -95,6 +108,7 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerReporteDetalladoEvento` (lógica del servicio). */
     public ReporteEventoDTO obtenerReporteDetalladoEvento(Long eventoId, Long organizadorId) {
         Evento evento = buscarEventoYValidarOrganizador(eventoId, organizadorId);
 
@@ -157,6 +171,7 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerReporteAvanzadoEvento` (lógica del servicio). */
     public ReporteEventoAvanzadoDTO obtenerReporteAvanzadoEvento(Long eventoId, Long organizadorId) {
         Evento evento = buscarEventoYValidarOrganizador(eventoId, organizadorId);
 
@@ -261,6 +276,7 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerDashboardOrganizador` (lógica del servicio). */
     public DashboardOrganizadorDTO obtenerDashboardOrganizador(Long organizadorId) {
         if (organizadorId == null) {
             throw new CustomException("organizadorId es obligatorio.", HttpStatus.BAD_REQUEST);
@@ -324,6 +340,7 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
+    /** Ejecuta `obtenerDashboardAdmin` (lógica del servicio). */
     public DashboardAdminDTO obtenerDashboardAdmin() {
         List<Evento> eventos = eventoRepository.findAll();
         long activos = 0, pendientes = 0, cancelados = 0;

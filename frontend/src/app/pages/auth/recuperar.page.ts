@@ -1,3 +1,4 @@
+// Archivo `pages/auth/recuperar.page.ts` — pages: recuperar.
 import { Component, inject, signal, output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';

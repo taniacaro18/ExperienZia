@@ -21,63 +21,78 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
 
+/**
+ * Configuración de Spring Security: contraseñas, CORS, JWT y qué rutas son públicas.
+ */
 @Configuration
-@EnableWebSecurity
+@EnableWebSecurity // activa el módulo de seguridad web
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+	// filtro que lee el token JWT en cada petición
+	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
-        this.jwtAuthenticationFilter = jwtAuthenticationFilter;
-    }
+	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+	}
 
-    @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder();
-    }
+	/**
+	 * Encoder para guardar contraseñas hasheadas (BCrypt).
+	 */
+	@Bean
+	public PasswordEncoder passwordEncoder() {
+		return new BCryptPasswordEncoder();
+	}
 
-    /**
-     * Evita que Spring Boot genere el usuario HTTP Basic por defecto (solo usamos JWT).
-     */
-    @Bean
-    public UserDetailsService jwtOnlyUserDetailsService() {
-        return new InMemoryUserDetailsManager();
-    }
+	/**
+	 * Evita que Spring Boot genere el usuario HTTP Basic por defecto (solo usamos JWT).
+	 */
+	@Bean
+	public UserDetailsService jwtOnlyUserDetailsService() {
+		// lista vacía en memoria = no hay usuario "user" autogenerado
+		return new InMemoryUserDetailsManager();
+	}
 
-    @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-        CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
-        config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
-        config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
-    }
+	/**
+	 * Reglas CORS para que el frontend en localhost pueda llamar a la API.
+	 */
+	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration config = new CorsConfiguration();
+		// orígenes permitidos (patrones con puerto variable)
+		config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
+		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+		config.setAllowedHeaders(List.of("*"));
+		config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
+		config.setAllowCredentials(true); // cookies / auth entre dominios si hace falta
+		config.setMaxAge(3600L); // el navegador puede cachear preflight OPTIONS 1 hora
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", config); // aplica a todas las rutas
+		return source;
+	}
 
-    @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-        http
-                .cors(Customizer.withDefaults())
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .requestMatchers(HttpMethod.POST,
-                                "/api/usuarios/login",
-                                "/api/usuarios/registro",
-                                "/api/usuarios/recuperar").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/certificados/validar/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/certificados/pdf/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/eventos/catalogo/publicos", "/api/eventos/catalogo/publicos/*").permitAll()
-                        .anyRequest().authenticated())
-                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-        return http.build();
-    }
+	/**
+	 * Cadena de filtros: quién puede entrar sin token y dónde va el filtro JWT.
+	 */
+	@Bean
+	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+		http
+				.cors(Customizer.withDefaults())
+				.csrf(AbstractHttpConfigurer::disable) // API stateless, sin formularios CSRF clásicos
+				.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // preflight CORS
+						.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
+						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
+						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+						.requestMatchers(HttpMethod.POST,
+								"/api/usuarios/login",
+								"/api/usuarios/registro",
+								"/api/usuarios/recuperar").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/certificados/validar/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/certificados/pdf/**").permitAll()
+						.requestMatchers(HttpMethod.GET, "/api/eventos/catalogo/publicos", "/api/eventos/catalogo/publicos/*").permitAll()
+						.anyRequest().authenticated()) // todo lo demás necesita JWT válido
+				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+		return http.build();
+	}
 }

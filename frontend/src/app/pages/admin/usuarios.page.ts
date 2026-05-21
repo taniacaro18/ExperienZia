@@ -1,3 +1,4 @@
+// Archivo `pages/admin/usuarios.page.ts` — pages: usuarios.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';

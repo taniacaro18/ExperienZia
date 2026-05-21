@@ -1,3 +1,4 @@
+// Cliente HTTP para reportes y dashboards (organizador y admin)
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -46,10 +47,12 @@ export class ReporteApi {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl + '/api/reportes';
 
+  // Números globales: usuarios, eventos, inscripciones
   resumen(): Observable<{ totalUsuarios: number; totalEventos: number; totalInscripciones: number }> {
     return this.http.get<any>(this.base + '/resumen');
   }
 
+  // Ranking de eventos con más inscritos
   eventosPopulares(): Observable<EventoPopular[]> {
     return this.http.get<EventoPopular[]>(this.base + '/eventos-populares');
   }
@@ -58,16 +61,19 @@ export class ReporteApi {
     return this.http.get<AsistenciaReporte>(this.base + '/asistencia/' + eventoId);
   }
 
+  // KPIs del panel del organizador
   dashboardOrganizador(organizadorId: number): Observable<DashboardOrganizador> {
     return this.http.get<DashboardOrganizador>(
       this.base + '/dashboard/organizador/' + organizadorId
     );
   }
 
+  // KPIs del panel del administrador
   dashboardAdmin(): Observable<DashboardAdmin> {
     return this.http.get<DashboardAdmin>(this.base + '/dashboard/admin');
   }
 
+  // Reporte detallado de un evento (asistencia, curva horaria, staff...)
   reporteAvanzado(eventoId: number, organizadorId?: number): Observable<ReporteEventoAvanzado> {
     const params = organizadorId
       ? new HttpParams().set('organizadorId', String(organizadorId))

@@ -1,3 +1,4 @@
+// Archivo `pages/admin/reportes.page.ts` — pages: reportes.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

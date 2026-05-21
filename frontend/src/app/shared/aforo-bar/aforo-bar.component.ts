@@ -1,3 +1,4 @@
+// Archivo `shared/aforo-bar/aforo-bar.component.ts` — componente reutilizable: aforo bar.
 import { CommonModule } from '@angular/common';
 import { Component, Input, computed, signal } from '@angular/core';
 import { colorOcupacion, porcentajeOcupacion } from '../estado.helpers';

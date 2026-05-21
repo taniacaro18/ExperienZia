@@ -1,3 +1,4 @@
+// Archivo `pages/organizador/evento-form.page.ts` — pages: evento form.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';

@@ -1,3 +1,4 @@
+// Cliente HTTP: inscripciones, check-in/out, staff en eventos y carga de asistentes
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -32,6 +33,7 @@ export class InscripcionApi {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl;
 
+  // Un asistente se inscribe a un evento
   inscribir(usuarioId: number, eventoId: number): Observable<Inscripcion> {
     return this.http.post<Inscripcion>(this.base + '/api/inscripciones', {
       usuarioId,
@@ -51,6 +53,7 @@ export class InscripcionApi {
     return this.http.get<Inscripcion[]>(this.base + '/api/inscripciones/usuario/' + usuarioId);
   }
 
+  // Marcar entrada manual (staff elige inscripción)
   checkIn(inscripcionId: number, staffUsuarioId: number): Observable<Inscripcion> {
     return this.http.put<Inscripcion>(
       this.base + '/api/inscripciones/' + inscripcionId + '/check-in',
@@ -67,6 +70,7 @@ export class InscripcionApi {
     );
   }
 
+  // Check-in leyendo el código QR del asistente
   checkInQR(codigoQR: string, staffUsuarioId: number, eventoId?: number): Observable<Inscripcion> {
     return this.http.post<Inscripcion>(this.base + '/api/inscripciones/check-in/qr', {
       codigoQR,
@@ -83,6 +87,7 @@ export class InscripcionApi {
     }, { headers: new HttpHeaders().set(SKIP_GLOBAL_TOAST, '1') });
   }
 
+  // Cargar lista de asistentes escribiendo filas en pantalla
   cargaManual(
     eventoId: number,
     organizadorId: number,
@@ -105,6 +110,7 @@ export class InscripcionApi {
     );
   }
 
+  // Poner un staff en un evento con una función (QR, manual...)
   asignarStaff(
     eventoId: number,
     organizadorId: number,
@@ -165,6 +171,7 @@ export class InscripcionApi {
     );
   }
 
+  // Cuánta gente hay dentro ahora mismo
   aforoEnVivo(eventoId: number): Observable<AforoEnVivo> {
     return this.http.get<AforoEnVivo>(this.base + '/api/eventos/' + eventoId + '/aforo');
   }

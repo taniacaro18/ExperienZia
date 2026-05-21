@@ -1,3 +1,4 @@
+// Archivo `pages/common/perfil.page.ts` — pages: perfil.
 import { Component, inject, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import {

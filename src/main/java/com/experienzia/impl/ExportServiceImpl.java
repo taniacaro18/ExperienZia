@@ -51,6 +51,10 @@ import java.util.Locale;
  * desde los endpoints REST correspondientes.
  */
 @Service
+/**
+ * Clase de implementación del módulo Export.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class ExportServiceImpl implements ExportService {
 
     private static final DateTimeFormatter FECHA_FMT =
@@ -62,6 +66,7 @@ public class ExportServiceImpl implements ExportService {
     private static final String CERT_URL_VALIDACION = "experienzia.com/validar";
 
     @Override
+    /** Ejecuta `resumenAsistentesExcel` (lógica del servicio). */
     public byte[] resumenAsistentesExcel(EventoDTO evento, List<AsistenteEventoDTO> asistentes) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet hoja = wb.createSheet("Asistentes");
@@ -96,6 +101,7 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
+    /** Ejecuta `resumenAsistentesPdf` (lógica del servicio). */
     public byte[] resumenAsistentesPdf(EventoDTO evento, List<AsistenteEventoDTO> asistentes) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 36, 36, 48, 36);
@@ -143,6 +149,7 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
+    /** Ejecuta `eventosExcel` (lógica del servicio). */
     public byte[] eventosExcel(List<EventoDTO> eventos) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet hoja = wb.createSheet("Eventos");
@@ -180,6 +187,7 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
+    /** Ejecuta `eventosPdf` (lógica del servicio). */
     public byte[] eventosPdf(List<EventoDTO> eventos) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 36, 36, 48, 36);
@@ -225,6 +233,7 @@ public class ExportServiceImpl implements ExportService {
     }
 
     @Override
+    /** Ejecuta `certificadoPdf` (lógica del servicio). */
     public byte[] certificadoPdf(CertificadoDTO c) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 56, 56, 48, 56);

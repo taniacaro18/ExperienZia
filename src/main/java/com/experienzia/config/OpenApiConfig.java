@@ -8,22 +8,29 @@ import io.swagger.v3.oas.models.info.License;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+/**
+ * Configura Swagger / OpenAPI para documentar la API REST.
+ * Así en el navegador puedes ver los endpoints en swagger-ui.
+ */
 @Configuration
 public class OpenApiConfig {
 
-    @Bean
-    public OpenAPI experienziaOpenAPI() {
-        return new OpenAPI()
-                .info(new Info()
-                        .title("ExperienZia API")
-                        .description("API REST del sistema de gestión de eventos ExperienZia. "
-                                + "Cubre las historias de usuario HU-001 a HU-024 (gestión de usuarios, eventos, "
-                                + "inscripciones, check-in/out, pagos, certificados, reportes y auditoría).")
-                        .version("0.0.1-SNAPSHOT")
-                        .contact(new Contact().name("Equipo ExperienZia"))
-                        .license(new License().name("Uso académico")))
-                .externalDocs(new ExternalDocumentation()
-                        .description("Documentación e historias de usuario")
-                        .url("/swagger-ui.html"));
-    }
+	/**
+	 * Bean que define título, descripción y versión de la documentación.
+	 */
+	@Bean
+	public OpenAPI experienziaOpenAPI() {
+		return new OpenAPI()
+				.info(new Info()
+						.title("ExperienZia API")
+						.description("API REST del sistema de gestión de eventos ExperienZia. "
+								+ "Cubre las historias de usuario HU-001 a HU-024 (gestión de usuarios, eventos, "
+								+ "inscripciones, check-in/out, pagos, certificados, reportes y auditoría).")
+						.version("0.0.1-SNAPSHOT")
+						.contact(new Contact().name("Equipo ExperienZia"))
+						.license(new License().name("Uso académico")))
+				.externalDocs(new ExternalDocumentation()
+						.description("Documentación e historias de usuario")
+						.url("/swagger-ui.html"));
+	}
 }

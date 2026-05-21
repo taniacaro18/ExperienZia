@@ -1,3 +1,4 @@
+// Cliente HTTP para eventos (CRUD, catálogo público, aprobaciones)
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -28,6 +29,7 @@ export class EventoApi {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl + '/api/eventos';
 
+  // Todos los eventos (usuarios logueados)
   listar(): Observable<Evento[]> {
     return this.http.get<Evento[]>(this.base);
   }
@@ -36,6 +38,7 @@ export class EventoApi {
     return this.http.get<Evento>(this.base + '/' + id);
   }
 
+  // Catálogo sin login (solo eventos públicos aprobados)
   catalogoPublicos(): Observable<Evento[]> {
     return this.http.get<Evento[]>(this.base + '/catalogo/publicos');
   }
@@ -48,6 +51,7 @@ export class EventoApi {
     return this.http.get<Evento[]>(this.base + '/organizador/' + organizadorId);
   }
 
+  // Crear evento nuevo (organizador)
   crear(payload: Partial<Evento>): Observable<Evento> {
     return this.http.post<Evento>(this.base, payload);
   }
@@ -66,6 +70,7 @@ export class EventoApi {
     return this.http.get<Evento[]>(this.base + '/buscar', { params });
   }
 
+  // Admin aprueba un evento pendiente
   aprobar(id: number, adminId?: number): Observable<Evento> {
     const params = adminId
       ? new HttpParams().set('adminId', String(adminId))
@@ -91,6 +96,7 @@ export class EventoApi {
     return this.http.get<EventoNovedad[]>(this.base + '/' + id + '/novedades');
   }
 
+  // Ver si el salón está libre en un rango de fechas
   consultarDisponibilidadSalon(params: ConsultaDisponibilidadSalonParams): Observable<DisponibilidadSalon> {
     let httpParams = new HttpParams()
       .set('desde', params.desde)

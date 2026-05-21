@@ -1,3 +1,8 @@
+// Archivo `shared/stat-card/stat-card.component.ts` — componente reutilizable: stat card.
+/**
+ * Componente reutilizable: tarjeta con número grande (KPI).
+ * Recibe label, value, icono y tono de color por @Input (no usa signals ni API).
+ */
 import { CommonModule } from '@angular/common';
 import { Component, Input } from '@angular/core';
 

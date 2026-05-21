@@ -1,3 +1,4 @@
+// Archivo `shared/salon-disponibilidad/salon-disponibilidad-dialog.component.ts` — componente reutilizable: salon disponibilidad dialog.
 import { Component, effect, inject, input, model, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';

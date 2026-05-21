@@ -1,3 +1,4 @@
+// Archivo `pages/asistente/mis-inscripciones.page.ts` — pages: mis inscripciones.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { Router, RouterLink } from '@angular/router';

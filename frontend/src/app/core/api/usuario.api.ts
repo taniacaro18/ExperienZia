@@ -1,3 +1,4 @@
+// Cliente HTTP para endpoints de usuarios (admin, staff, búsquedas)
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
@@ -26,12 +27,14 @@ export interface CrearStaffPayload {
 export class UsuarioApi {
   private readonly http = inject(HttpClient);
   private readonly base = environment.apiUrl + '/api/usuarios';
-  private readonly admin = environment.apiUrl + '/api/admin/usuarios';
+  private readonly admin = environment.apiUrl + '/api/admin/usuarios'; // rutas solo admin
 
+  // Lista todos los usuarios (admin)
   listarTodos(): Observable<Usuario[]> {
     return this.http.get<Usuario[]>(this.base);
   }
 
+  // Buscar con filtros (nombre, email, rol...)
   buscar(criterios: UsuarioSearchCriteria): Observable<Usuario[]> {
     let params = new HttpParams();
     Object.entries(criterios).forEach(([k, v]) => {
@@ -42,6 +45,7 @@ export class UsuarioApi {
     return this.http.get<Usuario[]>(this.base + '/buscar', { params });
   }
 
+  // El organizador crea un usuario staff
   crearStaff(payload: CrearStaffPayload): Observable<Usuario> {
     return this.http.post<Usuario>(this.base + '/staff', payload);
   }
@@ -56,7 +60,7 @@ export class UsuarioApi {
     return this.http.post<any>(this.base + '/' + id + '/reenviar-credenciales', null, { params });
   }
 
-  // Acciones del admin
+  // --- Acciones que solo hace el ADMIN ---
   aprobarOrganizador(id: number, adminId?: number): Observable<Usuario> {
     const params = adminId ? new HttpParams().set('adminId', String(adminId)) : undefined;
     return this.http.put<Usuario>(this.admin + '/' + id + '/aprobar', null, { params });
@@ -82,7 +86,7 @@ export class UsuarioApi {
     return this.http.put<Usuario>(this.admin + '/' + id + '/rol', { rol }, { params });
   }
 
-  // Acciones de organizador sobre su staff
+  // --- El organizador activa/desactiva su propio staff ---
   desactivarStaff(organizadorId: number, staffId: number): Observable<Usuario> {
     return this.http.put<Usuario>(
       environment.apiUrl + '/api/organizadores/' + organizadorId + '/staff/' + staffId + '/desactivar',

@@ -12,10 +12,15 @@ import java.nio.file.Paths;
 import java.util.UUID;
 
 @Service
+/**
+ * Clase de contrato (interfaz) del módulo FileStorage.
+ * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
+ */
 public class FileStorageService {
 
     private static final String UPLOAD_DIR = "uploads/comprobantes/";
 
+    /** Ejecuta `guardarComprobante` (lógica del servicio). */
     public String guardarComprobante(MultipartFile archivo) {
         if (archivo == null || archivo.isEmpty()) {
             throw new CustomException("El archivo está vacío.", HttpStatus.BAD_REQUEST);

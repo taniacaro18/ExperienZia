@@ -10,9 +10,9 @@ import lombok.ToString;
 import java.time.LocalDateTime;
 
 /**
- * Pago de la tarifa de la plataforma para activar un evento.
- * Lo realiza siempre el ORGANIZADOR (no el asistente). El monto se calcula
- * automáticamente como precioPorHora * duracionHoras del evento.
+ * Entidad JPA del pago que hace el ORGANIZADOR a la plataforma para publicar o ampliar un evento.
+ * No es el pago del asistente al evento: es la tarifa de ExperienZia (aprox. precioPorHora × duración).
+ * Tabla {@code pagos}; se relaciona con {@link Evento} y {@link Usuario}.
  */
 @Entity
 @Table(name = "pagos")
@@ -25,10 +25,11 @@ public class Pago {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /** Evento al que corresponde este pago de activación. */
     @Column(name = "evento_id", nullable = false)
     private Long eventoId;
 
-    /** FK al evento que se está pagando. */
+    /** Relación JPA: un evento puede tener varios pagos en el tiempo (suplementos). */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "evento_id",
             referencedColumnName = "id",
@@ -39,10 +40,11 @@ public class Pago {
     @EqualsAndHashCode.Exclude
     private Evento evento;
 
+    /** Quién pagó (debe ser el organizador dueño del evento). */
     @Column(name = "organizador_id", nullable = false)
     private Long organizadorId;
 
-    /** FK al organizador que pagó (debe ser dueño del evento). */
+    /** Relación JPA al usuario organizador que subió el comprobante. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizador_id",
             referencedColumnName = "id",
@@ -68,20 +70,23 @@ public class Pago {
     @Column(name = "saldo_aprobado_previo")
     private Double saldoAprobadoPrevio;
 
+    /** PENDIENTE hasta que un admin apruebe o rechace el comprobante. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private EstadoPago estado;
 
+    /** Fecha en que se registró el pago en el sistema. */
     @Column(nullable = false)
     private LocalDateTime fecha;
 
     @Column(name = "motivo_rechazo", length = 2000)
     private String motivoRechazo;
 
+    /** ID del administrador que resolvió el pago (si ya se revisó). */
     @Column(name = "aprobador_id")
     private Long aprobadorId;
 
-    /** FK al admin que aprobó/rechazó (solo para BD/ERD). */
+    /** Relación JPA al admin que aprobó o rechazó. */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "aprobador_id",
             referencedColumnName = "id",

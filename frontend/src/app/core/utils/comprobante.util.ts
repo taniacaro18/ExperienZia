@@ -1,7 +1,9 @@
+// Utilidades para mostrar la URL del comprobante de pago (imagen o PDF)
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Pago } from '../models/domain.models';
 import { environment } from '../../../environments/environment';
 
+// Arma la URL completa del archivo del comprobante
 export function urlComprobantePago(p: Pago | null | undefined): string {
   if (!p?.comprobanteUrl) return '';
   const u = p.comprobanteUrl;
@@ -17,6 +19,7 @@ export function urlComprobanteSeguraPago(
   return sanitizer.bypassSecurityTrustResourceUrl(urlComprobantePago(p));
 }
 
+// Saber si el comprobante es una imagen (jpg, png...)
 export function esComprobanteImagen(p: Pago | null | undefined): boolean {
   if (!p?.comprobanteUrl) return false;
   return /\.(jpe?g|png|gif|webp|bmp)(\?|$)/i.test(p.comprobanteUrl);
