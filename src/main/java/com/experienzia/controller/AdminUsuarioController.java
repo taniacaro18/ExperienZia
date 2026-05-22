@@ -1,21 +1,25 @@
 package com.experienzia.controller;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.experienzia.dto.CambiarRolDTO;
 import com.experienzia.dto.UsuarioDTO;
+import com.experienzia.entity.TipoNotificacion;
 import com.experienzia.exceptions.CustomException;
 import com.experienzia.service.AuditoriaService;
 import com.experienzia.service.NotificacionService;
 import com.experienzia.service.UsuarioService;
-import com.experienzia.entity.TipoNotificacion;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-// Solo el administrador usa estas rutas para gestionar usuarios del sistema
 @RestController
 @RequestMapping("/api/admin/usuarios")
 public class AdminUsuarioController {
@@ -32,7 +36,6 @@ public class AdminUsuarioController {
         this.auditoriaService = auditoriaService;
     }
 
-    // PUT /api/admin/usuarios/{id}/aprobar — aprueba la cuenta de un organizador pendiente
     @PutMapping("/{id}/aprobar")
     public ResponseEntity<UsuarioDTO> aprobarOrganizador(
             @PathVariable Long id,
@@ -47,7 +50,6 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
-    // PUT /api/admin/usuarios/{id}/rechazar — rechaza la solicitud de organizador
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<UsuarioDTO> rechazarOrganizador(@PathVariable Long id,
                                                           @RequestParam(required = false) Long adminId,
@@ -61,7 +63,6 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
-    // PUT /api/admin/usuarios/{id}/desactivar — bloquea el acceso del usuario
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<UsuarioDTO> desactivar(@PathVariable Long id,
                                                  @RequestParam(required = false) Long adminId,
@@ -75,7 +76,6 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
-    /** HU-019: el admin reactiva una cuenta INACTIVO → ACTIVO. */
     @PutMapping("/{id}/reactivar")
     public ResponseEntity<UsuarioDTO> reactivar(@PathVariable Long id,
                                                 @RequestParam(required = false) Long adminId,
@@ -89,8 +89,6 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
-    /** HU-018: cambiar el rol de un usuario. */
-    // PUT /api/admin/usuarios/{id}/rol — el nuevo rol va en el JSON del cuerpo (@RequestBody)
     @PutMapping("/{id}/rol")
     public ResponseEntity<UsuarioDTO> cambiarRol(@PathVariable Long id,
                                                  @RequestBody CambiarRolDTO body,

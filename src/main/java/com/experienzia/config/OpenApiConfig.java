@@ -1,23 +1,19 @@
 package com.experienzia.config;
 
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
 import io.swagger.v3.oas.models.ExternalDocumentation;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
-/**
- * Configura Swagger / OpenAPI para documentar la API REST.
- * Así en el navegador puedes ver los endpoints en swagger-ui.
- */
+
 @Configuration
 public class OpenApiConfig {
 
-	/**
-	 * Bean que define título, descripción y versión de la documentación.
-	 */
+
 	@Bean
 	public OpenAPI experienziaOpenAPI() {
 		return new OpenAPI()

@@ -1,5 +1,20 @@
 package com.experienzia.controller;
 
+import java.time.LocalDateTime;
+import java.util.List;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.experienzia.dto.CancelarEventoDTO;
 import com.experienzia.dto.DisponibilidadSalonDTO;
 import com.experienzia.dto.EventoDTO;
@@ -12,16 +27,9 @@ import com.experienzia.service.EventoService;
 import com.experienzia.service.NotificacionService;
 import com.experienzia.spec.EventoSpecification.EventoSearchCriteria;
 import com.experienzia.util.ClientIpResolver;
+
 import jakarta.servlet.http.HttpServletRequest;
-import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
-import java.util.List;
-
-// API REST de eventos: crear, editar, aprobar, catálogo público, disponibilidad del salón, etc.
 @RestController
 @RequestMapping("/api/eventos")
 public class EventoController {
@@ -38,7 +46,6 @@ public class EventoController {
         this.auditoriaService = auditoriaService;
     }
 
-    // POST /api/eventos — el organizador crea un evento nuevo
     @PostMapping
     public ResponseEntity<EventoDTO> crear(@RequestBody EventoDTO dto, HttpServletRequest request) {
         EventoDTO creado = eventoService.crear(dto);
@@ -47,7 +54,6 @@ public class EventoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
-    // PUT /api/eventos/{id} — actualiza datos del evento; {id:\\d+} solo acepta números en la URL
     @PutMapping("/{id:\\d+}")
     public ResponseEntity<EventoDTO> editar(@PathVariable Long id, @RequestBody EventoDTO dto,
                                             HttpServletRequest request) {
@@ -77,7 +83,6 @@ public class EventoController {
         return ResponseEntity.ok(actualizado);
     }
 
-    // POST /api/eventos/{id}/aprobar — el admin aprueba la solicitud del evento
     @PostMapping("/{id:\\d+}/aprobar")
     public ResponseEntity<EventoDTO> aprobar(@PathVariable Long id,
                                              @RequestParam(required = false) Long adminId,
@@ -101,7 +106,6 @@ public class EventoController {
         return ResponseEntity.ok(aprobado);
     }
 
-    // POST /api/eventos/{id}/rechazar — el admin rechaza el evento (motivo opcional en el body)
     @PostMapping("/{id}/rechazar")
     public ResponseEntity<EventoDTO> rechazar(@PathVariable Long id,
                                               @RequestBody(required = false) RechazarEventoDTO body,
@@ -119,7 +123,6 @@ public class EventoController {
         return ResponseEntity.ok(rechazado);
     }
 
-    // POST /api/eventos/{id}/cancelar — el organizador pide cancelar su evento
     @PostMapping("/{id:\\d+}/cancelar")
     public ResponseEntity<EventoDTO> cancelar(@PathVariable Long id, @RequestBody CancelarEventoDTO body,
                                               HttpServletRequest request) {
@@ -132,13 +135,11 @@ public class EventoController {
         return ResponseEntity.ok(cancelado);
     }
 
-    // GET /api/eventos/{id}/novedades — historial de cambios del evento
     @GetMapping("/{id:\\d+}/novedades")
     public ResponseEntity<List<EventoNovedadDTO>> novedades(@PathVariable Long id) {
         return ResponseEntity.ok(eventoService.listarNovedades(id));
     }
 
-    // POST — el admin confirma la cancelación solicitada por el organizador
     @PostMapping("/{id:\\d+}/cancelacion/aprobar")
     public ResponseEntity<EventoDTO> aprobarCancelacion(@PathVariable Long id,
                                                         @RequestParam(required = false) Long adminId,
@@ -149,7 +150,6 @@ public class EventoController {
         return ResponseEntity.ok(dto);
     }
 
-    // POST — el admin rechaza la solicitud de cancelación
     @PostMapping("/{id:\\d+}/cancelacion/rechazar")
     public ResponseEntity<EventoDTO> rechazarCancelacion(@PathVariable Long id,
                                                          @RequestBody(required = false) RechazarEventoDTO body,
@@ -162,12 +162,9 @@ public class EventoController {
         return ResponseEntity.ok(dto);
     }
 
-    /** Calendario de ocupación del salón (organizador y admin). Ruta fija antes de /{id}. */
-    // GET /api/eventos/salon/disponibilidad — consulta huecos libres entre fechas
     @GetMapping("/salon/disponibilidad")
     public ResponseEntity<DisponibilidadSalonDTO> disponibilidadSalon(
             @RequestParam(required = false) String ubicacion,
-            // @DateTimeFormat convierte el texto de la URL a LocalDateTime (formato ISO)
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime desde,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime hasta,
             @RequestParam(required = false) Long excluirEventoId,
@@ -179,38 +176,31 @@ public class EventoController {
                 ubicacion, desde, hasta, excluirEventoId, propuestaInicio, propuestaFin));
     }
 
-    // GET /api/eventos/{id} — detalle de un evento por id
     @GetMapping("/{id:\\d+}")
     public ResponseEntity<EventoDTO> obtener(@PathVariable Long id) {
         return ResponseEntity.ok(eventoService.obtenerPorId(id));
     }
 
-    // GET /api/eventos — todos los eventos (vista administración)
     @GetMapping
     public ResponseEntity<List<EventoDTO>> listarTodos() {
         return ResponseEntity.ok(eventoService.listarTodos());
     }
 
-    // GET /api/eventos/catalogo/publicos — eventos visibles para el público (sin login)
     @GetMapping("/catalogo/publicos")
     public ResponseEntity<List<EventoDTO>> listarCatalogoPublicosActivos() {
         return ResponseEntity.ok(eventoService.listarCatalogoPublicoActivo());
     }
 
-    // GET /api/eventos/catalogo/publicos/{id} — ficha de un evento del catálogo público
     @GetMapping("/catalogo/publicos/{id:\\d+}")
     public ResponseEntity<EventoDTO> obtenerPublico(@PathVariable Long id) {
         return ResponseEntity.ok(eventoService.obtenerParaCatalogoPublico(id));
     }
 
-    // GET /api/eventos/organizador/{organizadorId} — eventos creados por ese organizador
     @GetMapping("/organizador/{organizadorId}")
     public ResponseEntity<List<EventoDTO>> listarMisEventos(@PathVariable Long organizadorId) {
         return ResponseEntity.ok(eventoService.listarPorOrganizador(organizadorId));
     }
 
-    /** HU-011: búsqueda con filtros (nombre, categoría, tipo, estado, fecha). */
-    // GET /api/eventos/buscar — filtros en query string rellenan EventoSearchCriteria automáticamente
     @GetMapping("/buscar")
     public ResponseEntity<List<EventoDTO>> buscar(EventoSearchCriteria criteria) {
         return ResponseEntity.ok(eventoService.buscar(criteria));

@@ -1,24 +1,28 @@
 package com.experienzia.controller;
 
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
 import com.experienzia.dto.PagoDTO;
 import com.experienzia.dto.RechazarPagoDTO;
 import com.experienzia.service.PagoService;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
-
 import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import java.util.List;
-import java.util.Optional;
 
-/**
- * Controlador de pagos. Solo el ORGANIZADOR registra pagos para sus eventos;
- * el ADMIN aprueba/rechaza. Asistentes y staff no interactúan con este recurso.
- */
 @RestController
 @RequestMapping("/api/pagos")
 public class PagoController {
@@ -29,20 +33,16 @@ public class PagoController {
         this.pagoService = pagoService;
     }
 
-    /** Registra el pago de la tarifa de un evento. */
-    // POST /api/pagos — sube el comprobante de pago de un evento
     @PostMapping
     public ResponseEntity<PagoDTO> registrar(
             @RequestParam Long eventoId,
             @RequestParam Long organizadorId,
-            // MultipartFile es el archivo que envía el cliente (imagen o PDF del comprobante)
             @RequestParam MultipartFile archivo,
             HttpServletRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(pagoService.registrar(eventoId, organizadorId, archivo, ClientIpResolver.resolve(request)));
     }
 
-    // PUT /api/pagos/{id}/aprobar — el admin aprueba un pago pendiente
     @PutMapping("/{id}/aprobar")
     public ResponseEntity<PagoDTO> aprobar(
             @PathVariable Long id,
@@ -51,7 +51,6 @@ public class PagoController {
         return ResponseEntity.ok(pagoService.aprobar(id, aprobadorId, ClientIpResolver.resolve(request)));
     }
 
-    // PUT /api/pagos/{id}/rechazar — el admin rechaza el pago (motivo en el cuerpo JSON)
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<PagoDTO> rechazar(
             @PathVariable Long id,
@@ -63,28 +62,22 @@ public class PagoController {
                 ClientIpResolver.resolve(request)));
     }
 
-    // GET /api/pagos/pendientes — lista pagos que aún no decidió el admin
     @GetMapping("/pendientes")
     public ResponseEntity<List<PagoDTO>> listarPendientes() {
         return ResponseEntity.ok(pagoService.listarPendientes());
     }
 
-    /** HU-021: historial completo con quién aprobó/rechazó y la fecha de la decisión. */
-    // GET /api/pagos — historial de todos los pagos
     @GetMapping
     public ResponseEntity<List<PagoDTO>> listarTodos() {
         return ResponseEntity.ok(pagoService.listarTodos());
     }
 
-    /** Historial de pagos de un organizador específico. */
-    // GET /api/pagos/organizador/{organizadorId}
+
     @GetMapping("/organizador/{organizadorId}")
     public ResponseEntity<List<PagoDTO>> listarPorOrganizador(@PathVariable Long organizadorId) {
         return ResponseEntity.ok(pagoService.listarPorOrganizador(organizadorId));
     }
 
-    /** Pago asociado a un evento (comprobante, complemento, estado). */
-    // GET /api/pagos/evento/{eventoId} — devuelve 404 si ese evento no tiene pago
     @GetMapping("/evento/{eventoId}")
     public ResponseEntity<PagoDTO> obtenerPorEvento(@PathVariable Long eventoId) {
         Optional<PagoDTO> dto = pagoService.obtenerPorEvento(eventoId);

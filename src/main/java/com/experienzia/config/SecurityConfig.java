@@ -1,6 +1,7 @@
 package com.experienzia.config;
 
-import com.experienzia.security.JwtAuthenticationFilter;
+import java.util.List;
+
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -9,9 +10,9 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -19,68 +20,55 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import java.util.List;
+import com.experienzia.security.JwtAuthenticationFilter;
 
-/**
- * Configuración de Spring Security: contraseñas, CORS, JWT y qué rutas son públicas.
- */
+
 @Configuration
-@EnableWebSecurity // activa el módulo de seguridad web
+@EnableWebSecurity 
 public class SecurityConfig {
 
-	// filtro que lee el token JWT en cada petición
 	private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
 	public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
 		this.jwtAuthenticationFilter = jwtAuthenticationFilter;
 	}
 
-	/**
-	 * Encoder para guardar contraseñas hasheadas (BCrypt).
-	 */
+
 	@Bean
 	public PasswordEncoder passwordEncoder() {
 		return new BCryptPasswordEncoder();
 	}
 
-	/**
-	 * Evita que Spring Boot genere el usuario HTTP Basic por defecto (solo usamos JWT).
-	 */
+
 	@Bean
 	public UserDetailsService jwtOnlyUserDetailsService() {
-		// lista vacía en memoria = no hay usuario "user" autogenerado
 		return new InMemoryUserDetailsManager();
 	}
 
-	/**
-	 * Reglas CORS para que el frontend en localhost pueda llamar a la API.
-	 */
 	@Bean
 	public CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration config = new CorsConfiguration();
-		// orígenes permitidos (patrones con puerto variable)
+
 		config.setAllowedOriginPatterns(List.of("http://localhost:*", "http://127.0.0.1:*"));
 		config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
 		config.setAllowedHeaders(List.of("*"));
 		config.setExposedHeaders(List.of("Authorization", "Content-Disposition"));
-		config.setAllowCredentials(true); // cookies / auth entre dominios si hace falta
-		config.setMaxAge(3600L); // el navegador puede cachear preflight OPTIONS 1 hora
+		config.setAllowCredentials(true); 
+		config.setMaxAge(3600L); 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-		source.registerCorsConfiguration("/**", config); // aplica a todas las rutas
+		source.registerCorsConfiguration("/**", config); 
 		return source;
 	}
 
-	/**
-	 * Cadena de filtros: quién puede entrar sin token y dónde va el filtro JWT.
-	 */
+
 	@Bean
 	public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
 		http
 				.cors(Customizer.withDefaults())
-				.csrf(AbstractHttpConfigurer::disable) // API stateless, sin formularios CSRF clásicos
+				.csrf(AbstractHttpConfigurer::disable) 
 				.sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
 				.authorizeHttpRequests(auth -> auth
-						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() // preflight CORS
+						.requestMatchers(HttpMethod.OPTIONS, "/**").permitAll() 
 						.requestMatchers(HttpMethod.GET, "/uploads/**").permitAll()
 						.requestMatchers("/actuator/health", "/actuator/info").permitAll()
 						.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
@@ -91,7 +79,7 @@ public class SecurityConfig {
 						.requestMatchers(HttpMethod.GET, "/api/certificados/validar/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/certificados/pdf/**").permitAll()
 						.requestMatchers(HttpMethod.GET, "/api/eventos/catalogo/publicos", "/api/eventos/catalogo/publicos/*").permitAll()
-						.anyRequest().authenticated()) // todo lo demás necesita JWT válido
+						.anyRequest().authenticated()) 
 				.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 		return http.build();
 	}

@@ -1,7 +1,7 @@
 package com.experienzia.controller;
 
-import com.experienzia.dto.NotificacionDTO;
-import com.experienzia.service.NotificacionService;
+import java.util.List;
+
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,18 +9,9 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import com.experienzia.dto.NotificacionDTO;
+import com.experienzia.service.NotificacionService;
 
-/**
- * Notificaciones in-app para cualquier rol (ADMIN, ORGANIZADOR, ASISTENTE, STAFF).
- * El propio sistema crea avisos internamente cuando:
- *  - se cancela un evento (a sus asistentes)
- *  - se aprueba/rechaza un pago (al organizador)
- *  - se registra check-in/check-out (al asistente)
- *  - se crea una inscripción masiva (a cada nuevo asistente)
- *  - hay actividad de aprobación/rechazo de un organizador (al organizador)
- */
-// Controlador para leer y marcar notificaciones dentro de la aplicación
 @RestController
 @RequestMapping("/api/notificaciones")
 public class NotificacionController {
@@ -31,15 +22,11 @@ public class NotificacionController {
         this.notificacionService = notificacionService;
     }
 
-    /** Lista todas las notificaciones de un usuario (más recientes primero). */
-    // GET /api/notificaciones/{usuarioId}
     @GetMapping("/{usuarioId}")
     public ResponseEntity<List<NotificacionDTO>> listar(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(notificacionService.listarPorUsuario(usuarioId));
     }
 
-    /** Marca una notificación como leída. */
-    // PUT /api/notificaciones/{id}/leida — actualiza el estado de una notificación concreta
     @PutMapping("/{id}/leida")
     public ResponseEntity<NotificacionDTO> marcarLeida(@PathVariable Long id) {
         return ResponseEntity.ok(notificacionService.marcarLeida(id));
