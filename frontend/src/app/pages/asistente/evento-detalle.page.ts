@@ -16,6 +16,7 @@ import { eventoVentanaYaCerro } from '../../shared/evento-catalogo.helpers';
 import { eventoEstadoLabel } from '../../shared/estado.helpers';
 import { AforoBarComponent } from '../../shared/aforo-bar/aforo-bar.component';
 import { destinoRetornoEventoDetalle } from '../../core/navigation/retorno-evento-detalle';
+import { QrInscripcionUi } from '../../shared/qr-inscripcion/qr-inscripcion.ui';
 
 @Component({
   selector: 'app-evento-detalle-page',
@@ -41,6 +42,7 @@ export class EventoDetallePage implements OnInit {
   private readonly auth = inject(AuthStore);
   private readonly messages = inject(MessageService);
   private readonly confirma = inject(ConfirmationService);
+  private readonly qrUi = inject(QrInscripcionUi);
 
   readonly cargando = signal(true);
   readonly evento = signal<Evento | null>(null);
@@ -238,5 +240,16 @@ export class EventoDetallePage implements OnInit {
   inicialTitulo(e: Evento): string {
     const n = (e.nombre ?? '?').trim();
     return n ? n.charAt(0).toUpperCase() : '?';
+  }
+
+  verMiQr(): void {
+    const ins = this.miInscripcion();
+    const e = this.evento();
+    if (!ins) return;
+    void this.qrUi.mostrar({
+      codigo: ins.codigoQR,
+      titulo: e?.nombre ?? 'Tu código QR',
+      nombreArchivo: `qr-${e?.nombre ?? 'evento'}-${ins.id}`
+    });
   }
 }

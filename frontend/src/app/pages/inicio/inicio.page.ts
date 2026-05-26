@@ -10,6 +10,7 @@ import { EventoApi } from '../../core/api/evento.api';
 import { CertificadoApi } from '../../core/api/certificado.api';
 import { Certificado, Evento, Inscripcion } from '../../core/models/domain.models';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
+import { QrInscripcionUi } from '../../shared/qr-inscripcion/qr-inscripcion.ui';
 
 /**
  * Página de inicio (Home) del usuario autenticado.
@@ -36,6 +37,7 @@ export class InicioPage {
   private readonly inscripcionApi = inject(InscripcionApi);
   private readonly eventoApi = inject(EventoApi);
   private readonly certificadoApi = inject(CertificadoApi);
+  private readonly qrUi = inject(QrInscripcionUi);
 
   readonly cargando = signal<boolean>(true);
   readonly inscripciones = signal<Inscripcion[]>([]);
@@ -129,5 +131,15 @@ export class InicioPage {
   primeraLetra(nombre?: string | null): string {
     if (!nombre) return '?';
     return nombre.trim().charAt(0).toUpperCase();
+  }
+
+  verQrProximo(): void {
+    const p = this.proximoEvento();
+    if (!p) return;
+    void this.qrUi.mostrar({
+      codigo: p.inscripcion.codigoQR,
+      titulo: p.evento.nombre,
+      nombreArchivo: `qr-${p.evento.nombre}-${p.inscripcion.id}`
+    });
   }
 }

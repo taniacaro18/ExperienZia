@@ -1,7 +1,7 @@
 // Archivo `pages/asistente/mis-inscripciones.page.ts` — pages: mis inscripciones.
 import { Component, computed, inject, signal } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { DialogModule } from 'primeng/dialog';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
@@ -13,7 +13,7 @@ import { Evento, Inscripcion } from '../../core/models/domain.models';
 import { AforoBarComponent } from '../../shared/aforo-bar/aforo-bar.component';
 import { eventoVentanaYaCerro } from '../../shared/evento-catalogo.helpers';
 import { forkJoin } from 'rxjs';
-import * as QRCode from 'qrcode';
+import { QrInscripcionUi } from '../../shared/qr-inscripcion/qr-inscripcion.ui';
 
 interface InscripcionConEvento {
   inscripcion: Inscripcion;
@@ -27,7 +27,6 @@ interface InscripcionConEvento {
     CommonModule,
     DatePipe,
     RouterLink,
-    DialogModule,
     ProgressSpinnerModule,
     ConfirmDialogModule,
     AforoBarComponent
@@ -41,12 +40,10 @@ export class MisInscripcionesPage {
   private readonly auth = inject(AuthStore);
   private readonly messages = inject(MessageService);
   private readonly confirma = inject(ConfirmationService);
-  private readonly router = inject(Router);
+  private readonly qrUi = inject(QrInscripcionUi);
 
   readonly cargando = signal(true);
   readonly items = signal<InscripcionConEvento[]>([]);
-  readonly qrAbierto = signal<InscripcionConEvento | null>(null);
-  readonly qrDataUrl = signal<string | null>(null);
 
   readonly proximas = computed(() =>
     this.items().filter(
@@ -131,36 +128,12 @@ export class MisInscripcionesPage {
     return n ? n.charAt(0).toUpperCase() : '?';
   }
 
-  async verQR(item: InscripcionConEvento) {
-    const codigo = item.inscripcion.codigoQR;
-    if (!codigo) {
-      this.messages.add({
-        severity: 'warn',
-        summary: 'Sin QR',
-        detail: 'Esta inscripción aún no tiene código QR.'
-      });
-      return;
-    }
-    try {
-      const dataUrl = await QRCode.toDataURL(codigo, {
-        width: 360,
-        margin: 1,
-        color: { dark: '#6D28D9', light: '#FFFFFF' }
-      });
-      this.qrDataUrl.set(dataUrl);
-      this.qrAbierto.set(item);
-    } catch {
-      this.messages.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'No se pudo generar el código QR.'
-      });
-    }
-  }
-
-  cerrarQR() {
-    this.qrAbierto.set(null);
-    this.qrDataUrl.set(null);
+  verQR(item: InscripcionConEvento): void {
+    void this.qrUi.mostrar({
+      codigo: item.inscripcion.codigoQR,
+      titulo: item.evento?.nombre ?? 'Tu código QR',
+      nombreArchivo: `qr-${item.evento?.nombre ?? 'evento'}-${item.inscripcion.id}`
+    });
   }
 
   cancelar(item: InscripcionConEvento) {
@@ -186,15 +159,4 @@ export class MisInscripcionesPage {
     });
   }
 
-  descargarQR() {
-    const dataUrl = this.qrDataUrl();
-    const item = this.qrAbierto();
-    if (!dataUrl || !item) return;
-    const a = document.createElement('a');
-    a.href = dataUrl;
-    a.download = `qr-${item.evento?.nombre ?? 'evento'}-${item.inscripcion.id}.png`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-  }
 }

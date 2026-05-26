@@ -179,9 +179,13 @@
 
         <div class="flex flex-col sm:flex-row flex-wrap gap-2 justify-center">
           @if (puedeInscribirse() || ins.estado !== 'ASISTIO') {
-            <a routerLink="/mis-inscripciones" class="ins-btn-primary w-full sm:w-auto justify-center">
+            <button
+              type="button"
+              class="ins-btn-primary w-full sm:w-auto justify-center"
+              (click)="verMiQr()"
+            >
               <i class="pi pi-qrcode text-[10px]"></i> Ver mi QR
-            </a>
+            </button>
           }
           @if (puedeInscribirse()) {
             <button

@@ -15,6 +15,7 @@ import { ToastModule } from 'primeng/toast';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { MenuItem } from 'primeng/api';
 import { LogoComponent } from '../../shared/logo/logo.component';
+import { QrInscripcionDialogComponent } from '../../shared/qr-inscripcion/qr-inscripcion-dialog.component';
 import { AuthStore } from '../../core/auth/auth.store';
 import { AuthService } from '../../core/auth/auth.service';
 import { NotificacionStore } from '../../core/state/notificacion.store';
@@ -42,7 +43,8 @@ interface ItemNavegacion {
     MenuModule,
     ToastModule,
     ConfirmDialogModule,
-    LogoComponent
+    LogoComponent,
+    QrInscripcionDialogComponent
   ],
   templateUrl: './shell-layout.component.html',
   styleUrl: './shell-layout.component.scss'
