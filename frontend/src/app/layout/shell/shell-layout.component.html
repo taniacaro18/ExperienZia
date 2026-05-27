@@ -15,29 +15,7 @@
       <app-logo class="lg:hidden" size="sm" link="/inicio" [onNavigate]="cerrarSidebarMobile" />
     </div>
 
-    @if (mostrarBuscador()) {
-      <div class="hidden md:flex flex-1 min-w-0 max-w-xl mx-1 sm:mx-2">
-        <div class="relative w-full flex items-center bg-white rounded-full pr-1">
-          <input
-            type="text"
-            placeholder="Busca eventos por nombre..."
-            class="flex-1 h-9 pl-4 pr-3 bg-transparent rounded-full focus:outline-none text-sm text-surface-900 placeholder:text-surface-400"
-            [(ngModel)]="textoBusqueda"
-            (keyup.enter)="buscar()"
-          />
-          <button
-            type="button"
-            (click)="buscar()"
-            class="h-8 px-4 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition flex items-center gap-1.5"
-          >
-            <i class="pi pi-search text-[10px]"></i>
-            <span>Buscar</span>
-          </button>
-        </div>
-      </div>
-    } @else {
-      <div class="flex-1 min-w-0"></div>
-    }
+
 
     <div class="flex items-center gap-1 sm:gap-2 shrink-0">
       @if (store.usuario(); as u) {

@@ -3,24 +3,7 @@
   <header class="app-shell-header h-16 px-4 lg:px-8 text-white flex items-center justify-between gap-4 sticky top-0 z-30 border-b border-white/10">
     <app-logo size="md" link="/catalogo" ariaLabel="ExperienZia — catálogo" />
 
-    <div class="hidden md:flex flex-1 max-w-xl mx-2">
-      <div class="relative w-full flex items-center bg-white rounded-full pr-1">
-        <input
-          type="text"
-          placeholder="Busca eventos por nombre..."
-          class="flex-1 h-9 pl-4 pr-3 bg-transparent rounded-full focus:outline-none text-sm text-surface-900 placeholder:text-surface-400"
-          [ngModel]="nombre()"
-          (ngModelChange)="nombre.set($event)"
-        />
-        <button
-          type="button"
-          class="h-8 px-4 rounded-full bg-brand-600 text-white text-xs font-bold hover:bg-brand-700 transition flex items-center gap-1.5"
-        >
-          <i class="pi pi-search text-[10px]"></i>
-          <span>Buscar</span>
-        </button>
-      </div>
-    </div>
+
 
     <div class="flex items-center gap-2 text-sm flex-wrap justify-end">
       <button
@@ -44,7 +27,7 @@
     <div class="flex items-end justify-between gap-4 flex-wrap mb-4">
       <div>
         <h1 class="ez-section-title">Eventos disponibles</h1>
-        <p class="ez-page-subtitle !mb-0">Explora eventos públicos. Tarifas e inscripción solo tras iniciar sesión.</p>
+        <p class="ez-page-subtitle !mb-0">Explora y participa en los eventos públicos.</p>
       </div>
     </div>
 
