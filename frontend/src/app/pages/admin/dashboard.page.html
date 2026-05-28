@@ -19,6 +19,26 @@
     </div>
   </div>
 
+  <section class="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-700 to-violet-600 text-white px-5 py-4 shadow-card">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-[11px] uppercase tracking-[0.18em] opacity-85 mb-1">Vista Ejecutiva</p>
+        <h2 class="text-lg font-display font-bold">Panel de Control Global</h2>
+        <p class="text-xs mt-1 opacity-90">Monitorea KPIs, alertas y tendencias de la plataforma en una sola pantalla.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="bg-white/15 border border-white/30 rounded-lg px-3 py-2">
+          <div class="opacity-80">Eventos activos</div>
+          <div class="font-bold text-sm">{{ stats()?.eventosActivos ?? 0 }}</div>
+        </div>
+        <div class="bg-white/15 border border-white/30 rounded-lg px-3 py-2">
+          <div class="opacity-80">Usuarios activos</div>
+          <div class="font-bold text-sm">{{ stats()?.usuariosActivos ?? 0 }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   @if (cargando() && !stats()) {
     <div class="flex justify-center py-16">
       <p-progressSpinner styleClass="!w-12 !h-12" strokeWidth="4"></p-progressSpinner>
@@ -135,7 +155,7 @@
 
     <!-- Series mensuales -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
-      <div class="ez-card">
+      <div class="ez-card border border-brand-100">
         <h3 class="text-sm font-bold text-brand-700 font-display uppercase tracking-wider mb-3">
           Eventos creados por mes
         </h3>
@@ -155,7 +175,7 @@
         }
       </div>
 
-      <div class="ez-card">
+      <div class="ez-card border border-brand-100">
         <h3 class="text-sm font-bold text-brand-700 font-display uppercase tracking-wider mb-3">
           Nuevos usuarios por mes
         </h3>
@@ -177,7 +197,7 @@
     </div>
 
     <!-- Filtros alcance administrador + gráficos estadísticos filtrados -->
-    <section class="ez-card space-y-4">
+    <section class="ez-card space-y-4 border border-brand-100">
       <div class="flex flex-wrap items-start justify-between gap-3">
         <h2 class="text-base font-bold text-brand-700 font-display uppercase tracking-wider mb-0">
           Análisis filtrado por organizador / fechas

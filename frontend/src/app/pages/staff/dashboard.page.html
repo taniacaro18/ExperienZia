@@ -23,6 +23,26 @@
     </div>
   </div>
 
+  <section class="rounded-2xl border border-brand-200 bg-gradient-to-r from-brand-700 to-violet-600 text-white px-5 py-4 shadow-card">
+    <div class="flex items-start justify-between gap-4 flex-wrap">
+      <div>
+        <p class="text-[11px] uppercase tracking-[0.18em] opacity-85 mb-1">Panel Operativo</p>
+        <h2 class="text-lg font-display font-bold">Monitoreo de Staff</h2>
+        <p class="text-xs mt-1 opacity-90">Accede rápido a tus eventos asignados y control de ingreso/salida.</p>
+      </div>
+      <div class="grid grid-cols-2 gap-2 text-xs">
+        <div class="bg-white/15 border border-white/30 rounded-lg px-3 py-2">
+          <div class="opacity-80">Asignados</div>
+          <div class="font-bold text-sm">{{ stats().total }}</div>
+        </div>
+        <div class="bg-white/15 border border-white/30 rounded-lg px-3 py-2">
+          <div class="opacity-80">Hoy</div>
+          <div class="font-bold text-sm">{{ stats().hoy }}</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   @if (cargando()) {
     <div class="flex justify-center py-16">
       <p-progressSpinner styleClass="!w-12 !h-12" strokeWidth="4"></p-progressSpinner>
@@ -45,7 +65,7 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           @for (e of hoy(); track e.eventoId) {
             <a [routerLink]="['/staff/eventos', e.eventoId]"
-               class="bg-brand-gradient-strong text-white rounded-2xl p-5 shadow-card hover:shadow-violet transition block">
+               class="bg-brand-gradient-strong text-white rounded-2xl p-5 shadow-card hover:shadow-violet transition block border border-white/20">
               <div class="flex items-start justify-between gap-2 mb-2">
                 <h3 class="font-bold text-lg line-clamp-2">{{ e.nombreEvento }}</h3>
                 <span class="bg-white/20 px-2 py-0.5 rounded-full text-[11px] font-bold">
