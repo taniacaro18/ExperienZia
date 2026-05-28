@@ -19,67 +19,54 @@ import com.experienzia.spec.UsuarioSpecification.UsuarioSearchCriteria;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.security.SecureRandom;
 import java.util.List;
 import java.util.Locale;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 @Service
-/**
- * Clase de implementación del módulo Usuario.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
+// Aquí lo que hago es todo lo de cuentas: registro, login, staff del organizador y que el admin apruebe organizadores.
 public class UsuarioServiceImpl implements UsuarioService {
 
-    private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
-    /** Registro público: solo letras Unicode y espacios. */
-    private static final Pattern REG_NOMBRE_REGISTRO = Pattern.compile("^[\\p{L}\\s]+$");
-    /** Teléfono de perfil: dígitos y separadores habituales, longitud razonable. */
-    private static final String TELEFONO_PERFIL_REGEX = "^[0-9+\\s().-]+$";
-    private static final String ALFABETO_PASS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-    private static final SecureRandom RANDOM = new SecureRandom();
-
-    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
-    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
-    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
-    /** Dato del campo password encoder */
-    private final PasswordEncoder passwordEncoder;
+    private final UsuarioValidator usuarioValidator;
+    private final PasswordCryptoHelper passwordCrypto;
 
-    public UsuarioServiceImpl(UsuarioRepository usuarioRepository,
-                              NotificacionService notificacionService,
-                              ModelMapper modelMapper,
-                              PasswordEncoder passwordEncoder) {
+    public UsuarioServiceImpl(
+            UsuarioRepository usuarioRepository,
+            NotificacionService notificacionService,
+            ModelMapper modelMapper,
+            UsuarioValidator usuarioValidator,
+            PasswordCryptoHelper passwordCrypto) {
         this.usuarioRepository = usuarioRepository;
         this.notificacionService = notificacionService;
         this.modelMapper = modelMapper;
-        this.passwordEncoder = passwordEncoder;
+        this.usuarioValidator = usuarioValidator;
+        this.passwordCrypto = passwordCrypto;
     }
 
     @Override
-    /** Ejecuta `registrar` (lógica del servicio). */
     public UsuarioDTO registrar(UsuarioDTO dto) {
-        validarDatosObligatorios(dto.getNombre(), dto.getEmail(), dto.getPassword());
-        validarFormatoRegistro(dto);
-        validarEmailUnico(dto.getEmail());
-        validarNumeroDocumentoUnico(dto.getNumeroDocumento());
-        validarTelefonoUnico(dto.getTelefono());
+        // Primero valido formato y unicidad; si algo falla mando error antes de tocar la BD.
+        usuarioValidator.validarDatosObligatorios(dto.getNombre(), dto.getEmail(), dto.getPassword());
+        usuarioValidator.validarFormatoRegistro(dto);
+        usuarioValidator.validarEmailUnico(dto.getEmail());
+        usuarioValidator.validarNumeroDocumentoUnico(dto.getNumeroDocumento());
+        usuarioValidator.validarTelefonoUnico(dto.getTelefono());
 
         Usuario usuario = new Usuario();
         usuario.setNombre(dto.getNombre().trim());
         usuario.setEmail(dto.getEmail().trim().toLowerCase(Locale.ROOT));
-        usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        usuario.setPassword(passwordCrypto.encode(dto.getPassword()));
         usuario.setTelefono(blankToNull(dto.getTelefono()));
         usuario.setTipoDocumento(dto.getTipoDocumento());
         usuario.setNumeroDocumento(blankToNull(dto.getNumeroDocumento()));
 
+        // El front manda tipo ASISTENTE u ORGANIZADOR; organizador queda PENDIENTE hasta que el admin lo apruebe.
+        // El front manda tipo ASISTENTE u ORGANIZADOR; ADMIN/STAFF no se crean por registro abierto.
         String tipo = dto.getTipo();
         if ("ORGANIZADOR".equalsIgnoreCase(tipo)) {
             usuario.setRol(Rol.ORGANIZADOR);
@@ -96,8 +83,9 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `login` (lógica del servicio). */
+    // Login: si la clave vieja estaba en texto plano, la migro a BCrypt al entrar.
     public UsuarioDTO login(LoginDTO dto) {
+        // Login normal: busco por email en minúsculas y comparo contraseña con el helper (BCrypt o legado).
         if (dto.getEmail() == null || dto.getPassword() == null) {
             throw new CustomException("Email y contraseña son obligatorios.");
         }
@@ -105,7 +93,7 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .orElseThrow(() -> new CustomException(
                         "No existe una cuenta registrada con este correo.", HttpStatus.UNAUTHORIZED));
 
-        if (!passwordCoincide(dto.getPassword(), usuario.getPassword())) {
+        if (!passwordCrypto.passwordCoincide(dto.getPassword(), usuario.getPassword())) {
             throw new CustomException("La contraseña ingresada es incorrecta.", HttpStatus.UNAUTHORIZED);
         }
         if (usuario.getEstado() != Estado.ACTIVO) {
@@ -113,16 +101,19 @@ public class UsuarioServiceImpl implements UsuarioService {
                     "Acceso denegado. El estado de la cuenta es: " + usuario.getEstado(),
                     HttpStatus.FORBIDDEN);
         }
-        if (!passwordEsBcrypt(usuario.getPassword())) {
-            usuario.setPassword(passwordEncoder.encode(dto.getPassword()));
+        // Si en la BD quedó texto plano de datos viejos, en el primer login lo paso a hash y guardo.
+        // Si aún tenía password vieja en texto plano, la migro a BCrypt en este mismo login.
+        if (!passwordCrypto.passwordEsBcrypt(usuario.getPassword())) {
+            usuario.setPassword(passwordCrypto.encode(dto.getPassword()));
             usuario = usuarioRepository.save(usuario);
         }
         return toDto(usuario);
     }
 
     @Override
-    /** Ejecuta `crearStaff` (lógica del servicio). */
+    // El organizador crea su equipo STAFF ligado a su organizadorId.
     public UsuarioDTO crearStaff(CrearStaffDTO dto) {
+        // Solo el organizador dueño puede crear STAFF ligado a su organizadorId.
         if (dto.getOrganizadorId() == null) {
             throw new CustomException("organizadorId es obligatorio.");
         }
@@ -134,15 +125,15 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new CustomException("Solo un ORGANIZADOR puede crear usuarios STAFF.",
                     HttpStatus.FORBIDDEN);
         }
-        validarDatosObligatorios(dto.getNombre(), dto.getEmail(), dto.getPassword());
-        validarEmailUnico(dto.getEmail());
-        validarNumeroDocumentoUnico(dto.getNumeroDocumento());
-        validarTelefonoUnico(dto.getTelefono());
+        usuarioValidator.validarDatosObligatorios(dto.getNombre(), dto.getEmail(), dto.getPassword());
+        usuarioValidator.validarEmailUnico(dto.getEmail());
+        usuarioValidator.validarNumeroDocumentoUnico(dto.getNumeroDocumento());
+        usuarioValidator.validarTelefonoUnico(dto.getTelefono());
 
         Usuario staff = new Usuario();
         staff.setNombre(dto.getNombre().trim());
         staff.setEmail(dto.getEmail().trim().toLowerCase(Locale.ROOT));
-        staff.setPassword(passwordEncoder.encode(dto.getPassword()));
+        staff.setPassword(passwordCrypto.encode(dto.getPassword()));
         staff.setTelefono(dto.getTelefono());
         staff.setTipoDocumento(dto.getTipoDocumento());
         staff.setNumeroDocumento(dto.getNumeroDocumento());
@@ -153,9 +144,11 @@ public class UsuarioServiceImpl implements UsuarioService {
         return toDto(usuarioRepository.save(staff));
     }
 
+    // --- Ciclo de vida organizador (admin) ---
+
     @Override
-    /** Ejecuta `aprobarOrganizador` (lógica del servicio). */
     public UsuarioDTO aprobarOrganizador(Long id) {
+        // Flujo admin: organizador PENDIENTE → ACTIVO para que pueda crear eventos.
         Usuario u = buscarOFallar(id);
         if (u.getRol() != Rol.ORGANIZADOR) {
             throw new CustomException("Solo se pueden aprobar usuarios con rol ORGANIZADOR.");
@@ -169,7 +162,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `rechazarOrganizador` (lógica del servicio). */
     public UsuarioDTO rechazarOrganizador(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getRol() != Rol.ORGANIZADOR) {
@@ -184,7 +176,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `desactivar` (lógica del servicio). */
     public UsuarioDTO desactivar(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getEstado() == Estado.INACTIVO) {
@@ -195,7 +186,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `reactivar` (lógica del servicio). */
     public UsuarioDTO reactivar(Long id) {
         Usuario u = buscarOFallar(id);
         if (u.getEstado() == Estado.ACTIVO) {
@@ -210,7 +200,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `desactivarStaffPorOrganizador` (lógica del servicio). */
     public UsuarioDTO desactivarStaffPorOrganizador(Long organizadorId, Long staffId) {
         Usuario staff = validarStaffDelOrganizador(organizadorId, staffId);
         if (staff.getEstado() == Estado.INACTIVO) {
@@ -221,7 +210,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `reactivarStaffPorOrganizador` (lógica del servicio). */
     public UsuarioDTO reactivarStaffPorOrganizador(Long organizadorId, Long staffId) {
         Usuario staff = validarStaffDelOrganizador(organizadorId, staffId);
         if (staff.getEstado() == Estado.ACTIVO) {
@@ -235,6 +223,8 @@ public class UsuarioServiceImpl implements UsuarioService {
         return toDto(usuarioRepository.save(staff));
     }
 
+    // Me aseguro de que el staff sea de ese organizador y no de otro (check-in y asignaciones).
+    // El organizador solo puede activar/desactivar staff que él mismo creó.
     private Usuario validarStaffDelOrganizador(Long organizadorId, Long staffId) {
         if (organizadorId == null) {
             throw new CustomException("organizadorId es obligatorio.");
@@ -255,7 +245,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `cambiarRol` (lógica del servicio). */
     public UsuarioDTO cambiarRol(Long id, String nuevoRol) {
         if (nuevoRol == null || nuevoRol.isBlank()) {
             throw new CustomException("El rol es obligatorio.");
@@ -276,49 +265,36 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `obtenerPorId` (lógica del servicio). */
     public UsuarioDTO obtenerPorId(Long id) {
         return toDto(buscarOFallar(id));
     }
 
     @Override
-    /** Ejecuta `actualizarPerfil` (lógica del servicio). */
     public UsuarioDTO actualizarPerfil(Long id, ActualizarPerfilDTO dto) {
+        // Perfil: teléfono opcional; contraseña solo si el mismo usuario está logueado (lo valida el validator).
         Usuario u = buscarOFallar(id);
         if (dto.getTelefono() != null) {
             String tel = dto.getTelefono().isBlank() ? null : dto.getTelefono().trim();
             if (tel != null) {
-                if (tel.length() < 7 || tel.length() > 20) {
-                    throw new CustomException("El teléfono debe tener entre 7 y 20 caracteres.");
-                }
-                if (!tel.matches(TELEFONO_PERFIL_REGEX)) {
-                    throw new CustomException(
-                            "El teléfono solo puede incluir dígitos, espacios y los símbolos + ( ) - .");
-                }
-                if (!tel.equals(u.getTelefono()) && usuarioRepository.existsByTelefono(tel)) {
-                    throw new CustomException("El teléfono ya pertenece a otro usuario.");
-                }
+                usuarioValidator.validarTelefonoPerfil(tel, u.getTelefono());
             }
             u.setTelefono(tel);
         }
         if (dto.getNuevaPassword() != null && !dto.getNuevaPassword().isBlank()) {
-            validarActorPuedeCambiarContrasenaDe(id);
+            usuarioValidator.validarActorPuedeCambiarContrasenaDe(id);
             String nuevaPass = dto.getNuevaPassword().trim();
-            if (nuevaPass.length() < 4) {
-                throw new CustomException("La contraseña debe tener al menos 4 caracteres.");
-            }
-            // HU-005 C03: la nueva contraseña no puede ser igual a la anterior.
-            if (passwordCoincide(nuevaPass, u.getPassword())) {
-                throw new CustomException("La nueva contraseña no puede ser igual a la anterior.");
-            }
-            u.setPassword(passwordEncoder.encode(nuevaPass));
+            usuarioValidator.validarLongitudNuevaPasswordPerfil(nuevaPass);
+            passwordCrypto.validarNuevaPasswordDistintaDeAnterior(nuevaPass, u.getPassword());
+            u.setPassword(passwordCrypto.encode(nuevaPass));
         }
         return toDto(usuarioRepository.save(u));
     }
 
     @Override
-    /** Ejecuta `recuperarPassword` (lógica del servicio). */
+    // Olvidé mi clave: valido email + documento y devuelvo temporal en la respuesta (el front la muestra).
     public RecuperarPasswordResponseDTO recuperarPassword(RecuperarPasswordDTO dto) {
+        // Recuperación pública: email + documento deben coincidir con la cuenta ACTIVA.
+        // Recuperación: email + documento deben coincidir; genero clave temporal y la devuelvo en el response (HU).
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new CustomException("El correo electrónico es obligatorio.");
         }
@@ -338,8 +314,8 @@ public class UsuarioServiceImpl implements UsuarioService {
             throw new CustomException(
                     "Los datos de identidad no coinciden con la cuenta.", HttpStatus.UNAUTHORIZED);
         }
-        String temporal = generarPasswordTemporal(10);
-        u.setPassword(passwordEncoder.encode(temporal));
+        String temporal = passwordCrypto.generarPasswordTemporal(10);
+        u.setPassword(passwordCrypto.encode(temporal));
         Usuario guardado = usuarioRepository.save(u);
 
         return new RecuperarPasswordResponseDTO(
@@ -349,21 +325,21 @@ public class UsuarioServiceImpl implements UsuarioService {
                 "Se generó una contraseña temporal. Cámbiala desde tu perfil.");
     }
 
+    // Admin/organizador: genero pass temporal (a veces el mismo doc) y aviso por notificación.
     @Override
-    /** Ejecuta `reenviarCredenciales` (lógica del servicio). */
     public RecuperarPasswordResponseDTO reenviarCredenciales(Long usuarioId) {
+        // Admin/organizador reenvía credenciales: uso el doc como pass o temporal si no hay doc.
         Usuario u = buscarOFallar(usuarioId);
         if (u.getEstado() != Estado.ACTIVO) {
             throw new CustomException(
                     "Solo se pueden reenviar credenciales a usuarios ACTIVOS. Estado actual: " + u.getEstado() + ".",
                     HttpStatus.FORBIDDEN);
         }
-        // Si tiene número de documento (caso típico de carga masiva), volvemos a usarlo como contraseña.
-        // Si no, generamos una temporal.
+        // Atajo: si tiene documento, la clave inicial es el doc; si no, random sin caracteres confusos.
         String nuevaPass = (u.getNumeroDocumento() != null && !u.getNumeroDocumento().isBlank())
                 ? u.getNumeroDocumento().trim()
-                : generarPasswordTemporal(10);
-        u.setPassword(passwordEncoder.encode(nuevaPass));
+                : passwordCrypto.generarPasswordTemporal(10);
+        u.setPassword(passwordCrypto.encode(nuevaPass));
         Usuario guardado = usuarioRepository.save(u);
 
         notificacionService.crear(guardado.getId(),
@@ -379,7 +355,6 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `listarTodos` (lógica del servicio). */
     public List<UsuarioDTO> listarTodos() {
         return usuarioRepository.findAll().stream()
                 .map(this::toDto)
@@ -387,8 +362,8 @@ public class UsuarioServiceImpl implements UsuarioService {
     }
 
     @Override
-    /** Ejecuta `buscarPorCriterios` (lógica del servicio). */
     public List<UsuarioDTO> buscarPorCriterios(UsuarioSearchCriteria c) {
+        // Filtros del panel admin: armo Specification con AND para no traer todo el mundo.
         Specification<Usuario> spec = Specification.where(UsuarioSpecification.hasNombre(c.getNombre()))
                 .and(UsuarioSpecification.hasEmail(c.getEmail()))
                 .and(UsuarioSpecification.hasRol(c.getRol()))
@@ -399,145 +374,25 @@ public class UsuarioServiceImpl implements UsuarioService {
                 .collect(Collectors.toList());
     }
 
-    // ----------------- helpers privados -----------------
-
     private Usuario buscarOFallar(Long id) {
         return usuarioRepository.findById(id)
                 .orElseThrow(() -> new CustomException(
                         "No se encontró un usuario con el ID: " + id, HttpStatus.NOT_FOUND));
     }
 
-    private void validarDatosObligatorios(String nombre, String email, String password) {
-        if (nombre == null || nombre.trim().isEmpty()) {
-            throw new CustomException("El nombre es un campo obligatorio.");
-        }
-        if (password == null || password.trim().isEmpty()) {
-            throw new CustomException("La contraseña es un campo obligatorio.");
-        }
-        if (email == null || email.trim().isEmpty()) {
-            throw new CustomException("El correo electrónico es un campo obligatorio.");
-        }
-        if (!email.matches(EMAIL_REGEX)) {
-            throw new CustomException("El formato del correo electrónico no es válido.");
-        }
-    }
-
-    /** HU-001/002: reglas de formato del formulario de registro público. */
-    private void validarFormatoRegistro(UsuarioDTO dto) {
-        String nombre = dto.getNombre().trim();
-        if (nombre.length() < 3) {
-            throw new CustomException("El nombre debe tener al menos 3 caracteres.");
-        }
-        if (!REG_NOMBRE_REGISTRO.matcher(nombre).matches()) {
-            throw new CustomException("El nombre solo puede contener letras y espacios.");
-        }
-        String tel = dto.getTelefono() != null ? dto.getTelefono().trim() : "";
-        if (tel.isEmpty()) {
-            throw new CustomException("El número de celular es obligatorio.");
-        }
-        if (!tel.matches("^\\d{10}$")) {
-            throw new CustomException("El celular debe tener exactamente 10 dígitos numéricos.");
-        }
-        String doc = dto.getNumeroDocumento() != null ? dto.getNumeroDocumento().trim() : "";
-        if (doc.isEmpty()) {
-            throw new CustomException("El número de documento es obligatorio.");
-        }
-        if (!doc.matches("^\\d{4,10}$")) {
-            throw new CustomException("El documento solo puede contener números (entre 4 y 10 dígitos).");
-        }
-        if (dto.getTipoDocumento() == null || dto.getTipoDocumento().isBlank()) {
-            throw new CustomException("El tipo de documento es obligatorio.");
-        }
-        String pwd = dto.getPassword();
-        if (pwd.length() < 9) {
-            throw new CustomException("La contraseña debe tener más de 8 caracteres (mínimo 9).");
-        }
-        boolean mayus = pwd.codePoints().anyMatch(Character::isUpperCase);
-        boolean minus = pwd.codePoints().anyMatch(Character::isLowerCase);
-        boolean especial = pwd.codePoints()
-                .anyMatch(cp -> !Character.isLetter(cp) && !Character.isDigit(cp) && !Character.isWhitespace(cp));
-        if (!mayus) {
-            throw new CustomException("La contraseña debe incluir al menos una letra mayúscula.");
-        }
-        if (!minus) {
-            throw new CustomException("La contraseña debe incluir al menos una letra minúscula.");
-        }
-        if (!especial) {
-            throw new CustomException("La contraseña debe incluir al menos un carácter especial.");
-        }
-    }
-
-    private void validarEmailUnico(String email) {
-        if (usuarioRepository.existsByEmail(email.trim().toLowerCase(Locale.ROOT))) {
-            throw new CustomException("El correo electrónico ya se encuentra registrado.");
-        }
-    }
-
-    /**
-     * La contraseña solo puede cambiarse por el propio usuario (perfil).
-     * Evita que un administrador u otro rol use PUT /usuarios/{id} para fijar la contraseña de terceros.
-     */
-    private void validarActorPuedeCambiarContrasenaDe(Long usuarioObjetivoId) {
-        var auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !(auth.getPrincipal() instanceof Long actorId)) {
-            throw new CustomException("No autenticado.", HttpStatus.UNAUTHORIZED);
-        }
-        if (!actorId.equals(usuarioObjetivoId)) {
-            throw new CustomException(
-                    "Solo puedes cambiar tu propia contraseña desde tu perfil.",
-                    HttpStatus.FORBIDDEN);
-        }
-    }
-
-    private void validarNumeroDocumentoUnico(String numeroDocumento) {
-        if (numeroDocumento == null || numeroDocumento.isBlank()) return;
-        if (usuarioRepository.existsByNumeroDocumento(numeroDocumento.trim())) {
-            throw new CustomException("El número de documento ya se encuentra registrado.");
-        }
-    }
-
-    private void validarTelefonoUnico(String telefono) {
-        if (telefono == null || telefono.isBlank()) return;
-        if (usuarioRepository.existsByTelefono(telefono.trim())) {
-            throw new CustomException("El teléfono ya se encuentra registrado.");
-        }
-    }
-
     private static String blankToNull(String s) {
         return s == null || s.isBlank() ? null : s.trim();
     }
 
-    private static String generarPasswordTemporal(int longitud) {
-        StringBuilder sb = new StringBuilder(longitud);
-        for (int i = 0; i < longitud; i++) {
-            sb.append(ALFABETO_PASS.charAt(RANDOM.nextInt(ALFABETO_PASS.length())));
-        }
-        return sb.toString();
-    }
-
-    private boolean passwordEsBcrypt(String stored) {
-        return stored != null
-                && (stored.startsWith("$2a$") || stored.startsWith("$2b$") || stored.startsWith("$2y$"));
-    }
-
-    /**
-     * BCrypt o contraseñas legadas en texto plano (se migran a BCrypt al iniciar sesión).
-     */
-    private boolean passwordCoincide(String raw, String stored) {
-        if (stored == null || raw == null) {
-            return false;
-        }
-        if (passwordEsBcrypt(stored)) {
-            return passwordEncoder.matches(raw, stored);
-        }
-        return raw.equals(stored);
-    }
-
     private UsuarioDTO toDto(Usuario u) {
         UsuarioDTO dto = modelMapper.map(u, UsuarioDTO.class);
-        if (u.getRol() != null) dto.setRol(u.getRol().name());
-        if (u.getEstado() != null) dto.setEstado(u.getEstado().name());
-        dto.setPassword(null); // nunca devolver la contraseña
+        if (u.getRol() != null) {
+            dto.setRol(u.getRol().name());
+        }
+        if (u.getEstado() != null) {
+            dto.setEstado(u.getEstado().name());
+        }
+        dto.setPassword(null); // nunca devuelvo el hash al front
         return dto;
     }
 }

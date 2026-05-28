@@ -3,15 +3,12 @@ package com.experienzia;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-/**
- * Prueba automática de Spring Boot.
- * Solo verifica que el contexto de la aplicación arranca sin errores.
- */
+// Yo solo verifico que Spring arranque sin reventar (contextLoads)
 @SpringBootTest
 class ApplicationTests {
 
+	// Si esto pasa, los beans y la config básica cargaron bien (no prueba negocio real)
 	@Test
-	/** Comprueba que Spring carga todos los beans. */
 	void contextLoads() {
 	}
 

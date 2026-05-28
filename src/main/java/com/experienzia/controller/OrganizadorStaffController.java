@@ -15,7 +15,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-
+// El organizador maneja su propio staff (desactivar/reactivar sin pasar por admin)
 @RestController
 @RequestMapping("/api/organizadores/{organizadorId}/staff")
 public class OrganizadorStaffController {
@@ -32,6 +32,8 @@ public class OrganizadorStaffController {
         this.auditoriaService = auditoriaService;
     }
 
+    // El organizador apaga a su staff sin pasar por el admin global
+    // El organizador frena a su staff sin pedirle al admin
     @PutMapping("/{staffId}/desactivar")
     public ResponseEntity<UsuarioDTO> desactivar(
             @PathVariable Long organizadorId,
@@ -46,6 +48,8 @@ public class OrganizadorStaffController {
         return ResponseEntity.ok(u);
     }
 
+    // Vuelve a activar al staff que el organizador había frenado
+    // Vuelve a activar la cuenta staff y le mando noti
     @PutMapping("/{staffId}/reactivar")
     public ResponseEntity<UsuarioDTO> reactivar(@PathVariable Long organizadorId,
                                                 @PathVariable Long staffId,

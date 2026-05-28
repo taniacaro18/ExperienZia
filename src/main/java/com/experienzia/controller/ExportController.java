@@ -14,11 +14,14 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.experienzia.dto.AsistenteEventoDTO;
 import com.experienzia.dto.EventoDTO;
+import com.experienzia.entity.Rol;
+import com.experienzia.security.SecurityAccessHelper;
 import com.experienzia.service.EventoService;
 import com.experienzia.service.InscripcionService;
+import com.experienzia.service.ReporteService;
 import com.experienzia.service.export.ExportService;
 
-
+// Descargas Excel/PDF para admin y organizador (no pasan por el front armando el archivo)
 @RestController
 @RequestMapping("/api/export")
 public class ExportController {
@@ -29,15 +32,19 @@ public class ExportController {
     private final ExportService exportService;
     private final EventoService eventoService;
     private final InscripcionService inscripcionService;
+    private final ReporteService reporteService;
 
     public ExportController(ExportService exportService,
                             EventoService eventoService,
-                            InscripcionService inscripcionService) {
+                            InscripcionService inscripcionService,
+                            ReporteService reporteService) {
         this.exportService = exportService;
         this.eventoService = eventoService;
         this.inscripcionService = inscripcionService;
+        this.reporteService = reporteService;
     }
 
+    // Todos los eventos en Excel (admin)
     @GetMapping(value = "/eventos.xlsx")
     public ResponseEntity<ByteArrayResource> eventosExcel() {
         List<EventoDTO> lista = eventoService.listarTodos();
@@ -63,6 +70,22 @@ public class ExportController {
         return descarga(data, nombre, XLSX);
     }
 
+    @GetMapping(value = {"/admin/reportes/pagos", "/reportes/admin/pagos.pdf"},
+            produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<ByteArrayResource> reportePagosAdminPdf() {
+        SecurityAccessHelper.requireRol(Rol.ADMIN);
+        byte[] data = exportService.reportePagosAdminPdf(reporteService.obtenerReportePagosAdmin());
+        return descarga(data, "reporte_pagos_experienzia.pdf", MediaType.APPLICATION_PDF);
+    }
+
+    @GetMapping(value = {"/admin/reportes/usuarios", "/reportes/admin/usuarios.pdf"},
+            produces = MediaType.APPLICATION_PDF_VALUE)
+    public ResponseEntity<ByteArrayResource> reporteUsuariosAdminPdf() {
+        SecurityAccessHelper.requireRol(Rol.ADMIN);
+        byte[] data = exportService.reporteUsuariosAdminPdf(reporteService.obtenerReporteUsuariosAdmin());
+        return descarga(data, "reporte_usuarios_experienzia.pdf", MediaType.APPLICATION_PDF);
+    }
+
     @GetMapping(value = "/eventos/{eventoId}/asistentes.pdf")
     public ResponseEntity<ByteArrayResource> asistentesPdf(
             @PathVariable Long eventoId,
@@ -74,6 +97,7 @@ public class ExportController {
         return descarga(data, nombre, MediaType.APPLICATION_PDF);
     }
 
+    // Sin organizadorId devuelvo lista vacía — honestamente el front siempre debería mandarlo
     private List<AsistenteEventoDTO> obtenerAsistentes(Long eventoId, Long organizadorId) {
         if (organizadorId != null) {
             return inscripcionService.listarAsistentesParaOrganizador(eventoId, organizadorId, null);

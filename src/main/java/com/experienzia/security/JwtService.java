@@ -12,16 +12,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.Date;
 
-/**
- * Servicio para crear y validar tokens JWT (JSON Web Token).
- * El login devuelve un token y el cliente lo manda en Authorization: Bearer ...
- */
+// Creo y valido el token que el front manda en Authorization: Bearer ...
 @Service
 public class JwtService {
 
-	// clave secreta para firmar el token (no se debe filtrar)
 	private final SecretKey key;
-	// cuántos milisegundos dura el token antes de expirar
 	private final long expirationMs;
 
 	public JwtService(
@@ -31,17 +26,13 @@ public class JwtService {
 		this.expirationMs = expirationMs;
 	}
 
-	/**
-	 * Prepara bytes válidos para HS256: si el secreto es corto hacemos SHA-256,
-	 * si es largo puede ser Base64 de 32+ bytes.
-	 */
+	// Si el secreto es corto lo estiro con SHA-256; si es largo puede ser Base64
 	private static byte[] deriveKeyBytes(String secret) {
 		String s = secret != null ? secret.trim() : "";
 		if (s.length() >= 64) {
 			try {
 				return Decoders.BASE64.decode(s);
 			} catch (IllegalArgumentException ignored) {
-				// no era Base64 válido, seguimos con texto plano abajo
 			}
 		}
 		byte[] raw = s.getBytes(StandardCharsets.UTF_8);
@@ -56,14 +47,11 @@ public class JwtService {
 		}
 	}
 
-	/**
-	 * Genera un JWT nuevo con el id del usuario, email y rol.
-	 */
 	public String generateToken(Long userId, String email, String rol) {
 		Date now = new Date();
 		Date exp = new Date(now.getTime() + expirationMs);
 		return Jwts.builder()
-				.subject(String.valueOf(userId)) // "subject" = quién es el dueño del token
+				.subject(String.valueOf(userId))
 				.claim("email", email)
 				.claim("rol", rol)
 				.issuedAt(now)
@@ -72,9 +60,7 @@ public class JwtService {
 				.compact();
 	}
 
-	/**
-	 * Lee y verifica el token; si la firma no cuadra lanza excepción.
-	 */
+	// Leo el token cuando llega una petición; si está vencido revienta y el filtro limpia contexto
 	public Claims parseClaims(String token) {
 		return Jwts.parser()
 				.verifyWith(key)
@@ -83,9 +69,6 @@ public class JwtService {
 				.getPayload();
 	}
 
-	/**
-	 * Saca el id de usuario del subject del JWT.
-	 */
 	public Long extractUserId(String token) {
 		String sub = parseClaims(token).getSubject();
 		return Long.parseLong(sub);

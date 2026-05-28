@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Lo serializo al front en el listado de auditoría del admin (viene de la tabla auditorias).
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

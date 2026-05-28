@@ -8,19 +8,17 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA de {@link EventoNovedad}: historial y solicitudes pendientes de cambio en eventos.
- */
+// Solicitudes de cambio/cancelación de eventos: historial y la PENDIENTE más reciente
 public interface EventoNovedadRepository extends JpaRepository<EventoNovedad, Long> {
 
-    /** Todas las novedades de un evento, la más nueva primero. */
+    // Historial de novedades de un evento, la más nueva primero (panel admin/organizador)
     List<EventoNovedad> findByEventoIdOrderByFechaSolicitudDesc(Long eventoId);
 
-    /** La última novedad de un evento en un estado (ej. la PENDIENTE más reciente). */
+    // La última novedad en un estado (ej. la PENDIENTE que el admin debe revisar)
     Optional<EventoNovedad> findFirstByEventoIdAndEstadoOrderByFechaSolicitudDesc(
             Long eventoId, EstadoNovedadEvento estado);
 
-    /** Igual que arriba pero filtrando también por tipo (cancelación, edición, etc.). */
+    // Igual pero por tipo también (cancelación vs edición vs suplemento de pago)
     Optional<EventoNovedad> findFirstByEventoIdAndEstadoAndTipoOrderByFechaSolicitudDesc(
             Long eventoId, EstadoNovedadEvento estado, TipoNovedadEvento tipo);
 }

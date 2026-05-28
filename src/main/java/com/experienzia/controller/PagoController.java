@@ -22,7 +22,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-
+// Comprobantes del organizador: subir, admin aprueba/rechaza, activa el evento
 @RestController
 @RequestMapping("/api/pagos")
 public class PagoController {
@@ -33,6 +33,7 @@ public class PagoController {
         this.pagoService = pagoService;
     }
 
+    // Organizador sube comprobante (multipart); guardo IP por si hay reclamo
     @PostMapping
     public ResponseEntity<PagoDTO> registrar(
             @RequestParam Long eventoId,
@@ -43,6 +44,7 @@ public class PagoController {
                 .body(pagoService.registrar(eventoId, organizadorId, archivo, ClientIpResolver.resolve(request)));
     }
 
+    // Admin aprueba pago y el evento puede pasar a ACTIVO en el service
     @PutMapping("/{id}/aprobar")
     public ResponseEntity<PagoDTO> aprobar(
             @PathVariable Long id,
@@ -62,6 +64,7 @@ public class PagoController {
                 ClientIpResolver.resolve(request)));
     }
 
+    // Cola del admin: comprobantes por revisar
     @GetMapping("/pendientes")
     public ResponseEntity<List<PagoDTO>> listarPendientes() {
         return ResponseEntity.ok(pagoService.listarPendientes());
@@ -72,12 +75,12 @@ public class PagoController {
         return ResponseEntity.ok(pagoService.listarTodos());
     }
 
-
     @GetMapping("/organizador/{organizadorId}")
     public ResponseEntity<List<PagoDTO>> listarPorOrganizador(@PathVariable Long organizadorId) {
         return ResponseEntity.ok(pagoService.listarPorOrganizador(organizadorId));
     }
 
+    // Un evento tiene a lo sumo un pago; 404 si aún no subieron comprobante
     @GetMapping("/evento/{eventoId}")
     public ResponseEntity<PagoDTO> obtenerPorEvento(@PathVariable Long eventoId) {
         Optional<PagoDTO> dto = pagoService.obtenerPorEvento(eventoId);

@@ -8,28 +8,20 @@ import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-/**
- * Captura excepciones de toda la API y las convierte en respuestas HTTP con mensaje.
- * Así el frontend recibe JSON/texto claro en lugar de un stack trace feo.
- */
-@RestControllerAdvice // escucha errores de todos los @RestController
+// Atrapa errores de toda la API y devuelve texto plano al front (sin stack trace feo)
+@RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	/**
-	 * Nuestras excepciones de negocio (CustomException).
-	 */
+	// Mis errores de negocio (CustomException) salen con el status que yo puse (400, 403, etc.)
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<String> handleCustom(CustomException ex) {
 		return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());
 	}
 
-	/**
-	 * Cuando la BD rechaza algo (unique, not null, foreign key, etc.).
-	 */
+	// Cuando la BD rechaza algo (unique, NOT NULL…) mando mensaje entendible al front
 	@ExceptionHandler(DataIntegrityViolationException.class)
 	public ResponseEntity<String> onDataIntegrityViolation(DataIntegrityViolationException ex) {
 		String detalle = ex.getMostSpecificCause() != null ? ex.getMostSpecificCause().getMessage() : ex.getMessage();
-		// caso especial del comprobante de pago que puede ser null
 		if (detalle != null && detalle.contains("comprobante_url")) {
 			return ResponseEntity.status(HttpStatus.CONFLICT)
 					.body("No se pudo actualizar el pago: el comprobante debe poder quedar vacío hasta que el organizador suba uno nuevo. "
@@ -39,26 +31,19 @@ public class GlobalExceptionHandler {
 				.body("No se pudo guardar por una restricción de datos. Verifica la información e inténtalo de nuevo.");
 	}
 
-	/**
-	 * Problemas de transacción (rollback inesperado, etc.).
-	 */
+	// Si la transacción hace rollback raro (pago + evento a la vez) no dejo al front colgado sin texto
 	@ExceptionHandler({ UnexpectedRollbackException.class, TransactionSystemException.class })
 	public ResponseEntity<String> onTransactionRollback(Exception ex) {
 		return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body("No se pudo confirmar la operación en base de datos. Revisa el estado del evento y del pago; si el error continúa, consulta los logs del servidor.");
 	}
 
-	/**
-	 * Argumentos inválidos en validaciones manuales (IllegalArgumentException).
-	 */
+	// Validaciones sueltas (CSV mal formado, etc.) → 400 con el mensaje tal cual
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<String> handleIllegalArgument(IllegalArgumentException ex) {
 		return ResponseEntity.badRequest().body(ex.getMessage());
 	}
 
-	/**
-	 * Estado incorrecto del objeto (IllegalStateException).
-	 */
 	@ExceptionHandler(IllegalStateException.class)
 	public ResponseEntity<String> handleIllegalState(IllegalStateException ex) {
 		return ResponseEntity.badRequest().body(ex.getMessage());

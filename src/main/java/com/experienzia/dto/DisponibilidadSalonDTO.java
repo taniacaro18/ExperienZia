@@ -6,6 +6,7 @@ import java.util.List;
 
 import lombok.Data;
 
+// Respuesta al consultar disponibilidad de ubicación — el organizador la usa al crear/editar evento.
 @Data
 
 public class DisponibilidadSalonDTO {

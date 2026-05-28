@@ -30,6 +30,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// Todo el ciclo de vida del evento: crear, editar, aprobar, catálogo público, salón
 @RestController
 @RequestMapping("/api/eventos")
 public class EventoController {
@@ -54,6 +55,7 @@ public class EventoController {
         return ResponseEntity.status(HttpStatus.CREATED).body(creado);
     }
 
+    // Editar puede dejar el evento en varios estados raros (suplemento, revisión...) — mando noti al organizador
     @PutMapping("/{id:\\d+}")
     public ResponseEntity<EventoDTO> editar(@PathVariable Long id, @RequestBody EventoDTO dto,
                                             HttpServletRequest request) {
@@ -106,6 +108,7 @@ public class EventoController {
         return ResponseEntity.ok(aprobado);
     }
 
+    // Admin rechaza solicitud de evento; motivo opcional va en la noti
     @PostMapping("/{id}/rechazar")
     public ResponseEntity<EventoDTO> rechazar(@PathVariable Long id,
                                               @RequestBody(required = false) RechazarEventoDTO body,
@@ -140,6 +143,7 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.listarNovedades(id));
     }
 
+    // Admin aprueba o rechaza la cancelación que pidió el organizador
     @PostMapping("/{id:\\d+}/cancelacion/aprobar")
     public ResponseEntity<EventoDTO> aprobarCancelacion(@PathVariable Long id,
                                                         @RequestParam(required = false) Long adminId,
@@ -162,6 +166,8 @@ public class EventoController {
         return ResponseEntity.ok(dto);
     }
 
+    // El front consulta si el salón está libre antes de guardar fechas (evita choque de horarios)
+    // El front consulta si el salón está libre antes de guardar fechas (muchas query params, me confundí una vez)
     @GetMapping("/salon/disponibilidad")
     public ResponseEntity<DisponibilidadSalonDTO> disponibilidadSalon(
             @RequestParam(required = false) String ubicacion,
@@ -186,6 +192,8 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.listarTodos());
     }
 
+    // Catálogo sin login — SecurityConfig deja pasar estas rutas
+    // Catálogo sin login: solo eventos públicos activos para el asistente
     @GetMapping("/catalogo/publicos")
     public ResponseEntity<List<EventoDTO>> listarCatalogoPublicosActivos() {
         return ResponseEntity.ok(eventoService.listarCatalogoPublicoActivo());
@@ -201,6 +209,7 @@ public class EventoController {
         return ResponseEntity.ok(eventoService.listarPorOrganizador(organizadorId));
     }
 
+    // Filtros del admin/organizador (nombre, estado, fechas...) vienen en query string
     @GetMapping("/buscar")
     public ResponseEntity<List<EventoDTO>> buscar(EventoSearchCriteria criteria) {
         return ResponseEntity.ok(eventoService.buscar(criteria));

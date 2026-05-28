@@ -11,16 +11,13 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.UUID;
 
+// Guardo y borro comprobantes de pago en disco; el front luego pide la URL /uploads/...
 @Service
-/**
- * Clase de contrato (interfaz) del módulo FileStorage.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
 public class FileStorageService {
 
     private static final String UPLOAD_DIR = "uploads/comprobantes/";
 
-    /** Ejecuta `guardarComprobante` (lógica del servicio). */
+    // Recibo el archivo del front, valido tipo y lo dejo en uploads; devuelvo la ruta pública
     public String guardarComprobante(MultipartFile archivo) {
         if (archivo == null || archivo.isEmpty()) {
             throw new CustomException("El archivo está vacío.", HttpStatus.BAD_REQUEST);
@@ -54,15 +51,14 @@ public class FileStorageService {
             String uniqueName = UUID.randomUUID() + extension;
             Path filePath = uploadPath.resolve(uniqueName);
             Files.copy(archivo.getInputStream(), filePath);
-            // Devolvemos siempre la ruta pública (URL relativa) con la que el
-            // frontend podrá pedirla a /uploads/comprobantes/xxx desde el servidor.
+            // La ruta relativa es la que el front usa para mostrar o descargar el comprobante
             return "/uploads/comprobantes/" + uniqueName;
         } catch (IOException e) {
             throw new CustomException("Error al guardar el archivo comprobante.", HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
-    /** Elimina un comprobante previamente guardado (ruta relativa tipo {@code /uploads/comprobantes/...}). */
+    // Borro el archivo del disco cuando cambian o rechazan un pago (si no existe no freno el flujo)
     public void borrarComprobantePublico(String urlRelativa) {
         if (urlRelativa == null || urlRelativa.isBlank()) {
             return;
@@ -75,7 +71,7 @@ public class FileStorageService {
             Path filePath = Paths.get(rel);
             Files.deleteIfExists(filePath);
         } catch (IOException ignored) {
-            // No bloquear el flujo si el archivo ya no existe.
+            // Si ya no está el archivo sigo igual, no le rompo la vuelta al front
         }
     }
 }

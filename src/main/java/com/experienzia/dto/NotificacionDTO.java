@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Una fila de la campana del front — mapeo desde la entidad Notificacion sin exponer JPA.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -7,21 +7,19 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA de {@link StaffEventoAsignacion}: qué staff trabaja en qué evento y con qué función.
- */
+// Quién del staff trabaja en qué evento y con qué función (check-in QR, manual, etc.)
 @Repository
 public interface StaffEventoAsignacionRepository extends JpaRepository<StaffEventoAsignacion, Long> {
 
-    /** true si ese staff ya está asignado al evento (evitar duplicados). */
+    // Antes de asignar reviso en la BD: si ya está, freno y mando error al front
     boolean existsByStaffUsuarioIdAndEventoId(Long staffUsuarioId, Long eventoId);
 
-    /** Obtiene la asignación concreta staff + evento. */
+    // La fila concreta staff + evento (cambiar función o validar permisos)
     Optional<StaffEventoAsignacion> findByStaffUsuarioIdAndEventoId(Long staffUsuarioId, Long eventoId);
 
-    /** Equipo de staff de un evento. */
+    // Equipo completo de un evento (lista en panel organizador)
     List<StaffEventoAsignacion> findByEventoId(Long eventoId);
 
-    /** Eventos en los que trabaja un miembro del staff. */
+    // Eventos donde trabaja un staff (su panel en el front)
     List<StaffEventoAsignacion> findByStaffUsuarioId(Long staffUsuarioId);
 }

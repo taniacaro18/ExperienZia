@@ -22,23 +22,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+// Certificados solo si el asistente quedó en ASISTIO; el PDF lo arma ExportServiceImpl.
 @Service
 @Transactional
-/**
- * Clase de implementación del módulo Certificado.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
 public class CertificadoServiceImpl implements CertificadoService {
 
-    /** Dato del campo certificado repository */
     private final CertificadoRepository certificadoRepository;
-    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
-    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
-    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
-    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
 
     public CertificadoServiceImpl(CertificadoRepository certificadoRepository,
@@ -54,7 +46,7 @@ public class CertificadoServiceImpl implements CertificadoService {
     }
 
     @Override
-    /** Ejecuta `generar` (lógica del servicio). */
+    // Un certificado por inscripción que haya hecho check-in (estado ASISTIO).
     public CertificadoDTO generar(Long inscripcionId) {
         Inscripcion ins = inscripcionRepository.findById(inscripcionId)
                 .orElseThrow(() -> new CustomException("Inscripción no encontrada.", HttpStatus.NOT_FOUND));
@@ -69,7 +61,7 @@ public class CertificadoServiceImpl implements CertificadoService {
     }
 
     @Override
-    /** Ejecuta `generarMasivoPorEvento` (lógica del servicio). */
+    // El organizador dispara todos los que asistieron; omito los que ya tienen certificado.
     public List<CertificadoDTO> generarMasivoPorEvento(Long eventoId, Long organizadorId) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("Evento no encontrado.", HttpStatus.NOT_FOUND));
@@ -92,21 +84,19 @@ public class CertificadoServiceImpl implements CertificadoService {
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPorUsuario` (lógica del servicio). */
     public List<CertificadoDTO> listarPorUsuario(Long usuarioId) {
         return certificadoRepository.findByUsuarioId(usuarioId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPorEvento` (lógica del servicio). */
     public List<CertificadoDTO> listarPorEvento(Long eventoId) {
         return certificadoRepository.findByEventoId(eventoId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `validarPorCodigo` (lógica del servicio). */
+    // Página pública de validar: busco por el código que va impreso en el PDF.
     public CertificadoDTO validarPorCodigo(String codigoUnico) {
         return certificadoRepository.findByCodigoUnico(codigoUnico)
                 .map(this::toDto)
@@ -122,6 +112,7 @@ public class CertificadoServiceImpl implements CertificadoService {
         return certificadoRepository.save(c);
     }
 
+    // Armo el DTO con nombres para el front/PDF sin que tengan que hacer más GETs.
     private CertificadoDTO toDto(Certificado c) {
         CertificadoDTO dto = modelMapper.map(c, CertificadoDTO.class);
         Usuario u = usuarioRepository.findById(c.getUsuarioId()).orElse(null);

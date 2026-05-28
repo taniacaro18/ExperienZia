@@ -1,15 +1,9 @@
 package com.experienzia.entity;
 
-/**
- * Enum del estado de la cuenta de un {@link Usuario} (si puede entrar o no).
- */
+// Estado de la cuenta en usuarios — si puede loguearse o está bloqueado/pendiente.
 public enum Estado {
-    /** Cuenta normal y operativa. */
-    ACTIVO,
-    /** Esperando aprobación (por ejemplo organizador nuevo). */
-    PENDIENTE,
-    /** Registro denegado por un admin. */
-    RECHAZADO,
-    /** Cuenta deshabilitada o bloqueada. */
-    INACTIVO
+    ACTIVO,     // normal, puede entrar
+    PENDIENTE,  // recién registrado (ej. organizador esperando que lo aprueben)
+    RECHAZADO,  // el admin dijo que no
+    INACTIVO    // deshabilitado
 }

@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// El evento completo en JSON — creación, edición y detalle en catálogo/admin (mapeo desde entidad + extras).
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -21,6 +22,7 @@ public class EventoDTO {
 
     private String descripcion;
 
+    // Fechas del evento (inicio y fin para duración y sala)
     private LocalDateTime fecha;
 
     private LocalDateTime fechaFin;
@@ -31,12 +33,14 @@ public class EventoDTO {
 
     private EstadoEvento estado;
 
+    // Aforo y precio
     private Integer aforoMaximo;
 
     private Integer aforoActual;
 
     private Double costo;
 
+    // Datos del organizador (los relleno en el servicio para no ir al front a otra petición)
     private Long organizadorId;
 
     private String organizadorNombre;
@@ -49,6 +53,7 @@ public class EventoDTO {
 
     private Integer duracionHoras;
 
+    // Motivos y flujo de revisión admin
     private String motivoRechazo;
 
     private String motivoCancelacion;

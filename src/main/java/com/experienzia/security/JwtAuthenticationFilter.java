@@ -19,10 +19,7 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.util.List;
 
-/**
- * Filtro que corre en cada petición HTTP (excepto rutas públicas).
- * Lee el header Authorization, valida el JWT y deja al usuario "logueado" en SecurityContext.
- */
+// En cada request leo el Bearer, valido y dejo al usuario "logueado" para el resto del API
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
@@ -34,18 +31,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 		this.usuarioRepository = usuarioRepository;
 	}
 
-	/**
-	 * Algunas peticiones no deben pasar por aquí (OPTIONS de CORS y rutas públicas).
-	 */
+	// OPTIONS del CORS y rutas públicas no me meto
 	@Override
 	protected boolean shouldNotFilter(@Nonnull HttpServletRequest request) {
 		return "OPTIONS".equalsIgnoreCase(request.getMethod())
 				|| SecurityPaths.isPublic(request.getRequestURI());
 	}
 
-	/**
-	 * Lógica principal: si hay Bearer token válido, cargamos el usuario en el contexto de seguridad.
-	 */
 	@Override
 	protected void doFilterInternal(
 			@Nonnull HttpServletRequest request,
@@ -53,34 +45,48 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 			@Nonnull FilterChain filterChain) throws ServletException, IOException {
 
 		String header = request.getHeader(HttpHeaders.AUTHORIZATION);
-		// sin header o sin prefijo "Bearer " no hacemos nada (sigue la cadena de filtros)
+		// Sin Bearer dejo pasar; SecurityConfig manda 401 si la ruta no es pública
 		if (header == null || !header.startsWith("Bearer ")) {
 			filterChain.doFilter(request, response);
 			return;
 		}
 
-		// quitamos "Bearer " y nos quedamos solo con el token
 		String token = header.substring(7).trim();
+		boolean rutaProtegida = !SecurityPaths.isPublic(request.getRequestURI());
 		try {
 			Long userId = jwtService.extractUserId(token);
 			Usuario usuario = usuarioRepository.findById(userId).orElse(null);
-			// usuario borrado o inactivo = no autenticamos
+			// Cuenta desactivada o borrada: token válido pero no dejo entrar
 			if (usuario == null || usuario.getEstado() != Estado.ACTIVO) {
+				SecurityContextHolder.clearContext();
+				if (rutaProtegida) {
+					responderNoAutorizado(response, "Sesión inválida o cuenta inactiva.");
+					return;
+				}
 				filterChain.doFilter(request, response);
 				return;
 			}
 			String rol = usuario.getRol() != null ? usuario.getRol().name() : Rol.ASISTENTE.name();
-			// Spring Security usa "ROLE_ADMIN", "ROLE_ASISTENTE", etc.
 			var auth = new UsernamePasswordAuthenticationToken(
-					usuario.getId(), // principal = id del usuario (no el objeto completo)
-					null, // credentials null porque ya validamos el JWT
+					usuario.getId(),
+					null,
 					List.of(new SimpleGrantedAuthority("ROLE_" + rol)));
 			SecurityContextHolder.getContext().setAuthentication(auth);
 		} catch (Exception ignored) {
-			// token malo o expirado: limpiamos por si había algo viejo
+			// Token vencido o mal firmado
 			SecurityContextHolder.clearContext();
+			if (rutaProtegida) {
+				responderNoAutorizado(response, "Token inválido o expirado.");
+				return;
+			}
 		}
 
 		filterChain.doFilter(request, response);
+	}
+
+	private static void responderNoAutorizado(HttpServletResponse response, String mensaje) throws IOException {
+		response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+		response.setContentType("text/plain;charset=UTF-8");
+		response.getWriter().write(mensaje);
 	}
 }

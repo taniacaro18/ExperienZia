@@ -5,64 +5,49 @@ import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.ToString;
 
-/**
- * Entidad JPA que representa a una persona registrada en ExperienZia.
- * Cada fila de la tabla {@code usuarios} es un usuario que puede iniciar sesión:
- * asistente, organizador, staff o administrador.
- */
+// Entidad JPA: tabla usuarios en Postgres. Acá persisto a quien entra a la app (asistente, organizador, staff o admin).
 @Entity
 @Table(name = "usuarios")
 @Data
 public class Usuario {
 
-    /** Identificador único generado automáticamente por la base de datos. */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /** Nombre completo o de perfil del usuario. */
     @Column(nullable = false, length = 150)
     private String nombre;
 
-    /** Correo usado para login; no puede repetirse entre usuarios. */
+    // Login: el email es único en toda la BD
     @Column(unique = true, nullable = false, length = 150)
     private String email;
 
-    /** Contraseña guardada (en la app se hashea antes de guardar). */
     @Column(nullable = false, length = 200)
     private String password;
 
-    /** Teléfono opcional, también único si se informa. */
     @Column(unique = true, length = 50)
     private String telefono;
 
-    /** Tipo de documento, por ejemplo CC o CE. */
+    // Documento colombiano (CC, CE, etc.)
     @Column(length = 30)
     private String tipoDocumento;
 
-    /** Número de documento de identidad, único en el sistema. */
     @Column(unique = true, length = 50)
     private String numeroDocumento;
 
-    /** Rol del usuario: qué puede hacer en la plataforma (ver enum {@link Rol}). */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Rol rol;
 
-    /** Si la cuenta está activa, pendiente de aprobación, rechazada, etc. */
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 30)
     private Estado estado;
 
-    /** ID del organizador que creó este STAFF. Null para otros roles. */
+    // Si el rol es STAFF, acá va el id del organizador que lo creó (null para los demás)
     @Column(name = "organizador_id")
     private Long organizadorId;
 
-    /**
-     * Relación JPA {@code ManyToOne}: muchos usuarios STAFF pueden pertenecer a un mismo organizador.
-     * {@code LAZY} = no carga el organizador hasta que lo uses.
-     * {@code insertable/updatable false} = el ID real se guarda en {@link #organizadorId}.
-     */
+    // Relación ManyToOne al organizador: LAZY para no cargar de más; el id real lo manejo en organizadorId arriba
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "organizador_id",
             referencedColumnName = "id",

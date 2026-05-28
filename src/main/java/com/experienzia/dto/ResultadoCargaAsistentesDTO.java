@@ -6,6 +6,7 @@ import java.util.List;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Devuelvo esto al terminar la carga masiva — resumen de éxitos, omitidos y mensajes de error.
 @Data
 @NoArgsConstructor
 

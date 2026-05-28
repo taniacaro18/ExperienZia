@@ -17,6 +17,12 @@ export interface ColumnaExport<T> {
 
 @Injectable({ providedIn: 'root' })
 export class ExportService {
+  private logoDataUrl: string | null = null;
+
+  constructor() {
+    this.precargarLogo();
+  }
+
   // Descargar un Excel con columnas y filas que le pasemos
   exportarExcel<T>(filename: string, sheetName: string, columnas: ColumnaExport<T>[], rows: T[]) {
     const headers = columnas.map((c) => c.header);
@@ -81,18 +87,7 @@ export class ExportService {
                  columnas: ColumnaExport<T>[], rows: T[],
                  subtitulo?: string) {
     const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' });
-
-    doc.setFontSize(16);
-    doc.setTextColor(60, 38, 121);
-    doc.text(titulo, 40, 40);
-    if (subtitulo) {
-      doc.setFontSize(10);
-      doc.setTextColor(100);
-      doc.text(subtitulo, 40, 58);
-    }
-    doc.setFontSize(8);
-    doc.setTextColor(140);
-    doc.text('Generado: ' + new Date().toLocaleString(), 40, subtitulo ? 72 : 58);
+    const inicioY = this.dibujarCabeceraMarca(doc, titulo, subtitulo);
 
     const head = [columnas.map((c) => c.header)];
     const body: RowInput[] = rows.map((r) => columnas.map((c) => {
@@ -103,7 +98,7 @@ export class ExportService {
     autoTable(doc, {
       head,
       body,
-      startY: subtitulo ? 88 : 78,
+      startY: inicioY,
       styles: { fontSize: 8, cellPadding: 4 },
       headStyles: { fillColor: [124, 99, 196], textColor: 255, fontStyle: 'bold' },
       alternateRowStyles: { fillColor: [248, 244, 255] },
@@ -168,11 +163,13 @@ export class ExportService {
     const Margen = 40;
     const AnchoUtil = 515;
 
-    doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text('Generado: ' + new Date().toLocaleString(), Margen, 26);
+    this.dibujarCabeceraMarca(
+      doc,
+      'Reporte avanzado · ExperienZia',
+      vista === 'admin' ? 'Visión administrativa del evento' : 'Visión del organizador'
+    );
 
-    let y = this.dibujarEncabezadoEventoPdf(doc, r, Margen, 38, AnchoUtil);
+    let y = this.dibujarEncabezadoEventoPdf(doc, r, Margen, 86, AnchoUtil);
     y += 12;
 
     if (vista === 'admin') {
@@ -305,17 +302,15 @@ export class ExportService {
     AnchoUtil: number
   ): void {
     doc.addPage();
-    doc.setFontSize(9);
-    doc.setTextColor(120);
-    doc.text('Generado: ' + new Date().toLocaleString(), Margen, 26);
+    this.dibujarCabeceraMarca(doc, 'Anexo operativo · ExperienZia', 'Detalle horario y staff');
 
     doc.setFontSize(13);
     doc.setTextColor(60, 38, 121);
-    doc.text('Anexo · detalle operativo', Margen, 48);
+    doc.text('Anexo · detalle operativo', Margen, 86);
     doc.setFontSize(9);
     doc.setTextColor(90);
     const sub = doc.splitTextToSize(`${r.nombreEvento} · ${r.fechaEvento}`, AnchoUtil);
-    let y = 62;
+    let y = 100;
     for (const ln of sub) {
       doc.text(ln, Margen, y);
       y += 11;
@@ -460,6 +455,34 @@ export class ExportService {
     return y + h;
   }
 
+  private dibujarCabeceraMarca(doc: jsPDF, titulo: string, subtitulo?: string): number {
+    const x = 40;
+    const logoW = 72;
+    const logoH = 32;
+    if (this.logoDataUrl) {
+      doc.addImage(this.logoDataUrl, 'PNG', x, 20, logoW, logoH);
+    } else {
+      doc.setFontSize(12);
+      doc.setTextColor(124, 73, 174);
+      doc.text('ExperienZia', x, 40);
+    }
+    doc.setFontSize(16);
+    doc.setTextColor(60, 38, 121);
+    doc.text(titulo, x + 84, 34);
+    if (subtitulo) {
+      doc.setFontSize(9);
+      doc.setTextColor(110);
+      doc.text(subtitulo, x + 84, 48);
+    }
+    doc.setFontSize(8);
+    doc.setTextColor(140);
+    doc.text('Generado: ' + new Date().toLocaleString(), x + 84, 61);
+    doc.setDrawColor(124, 73, 174);
+    doc.setLineWidth(1.1);
+    doc.line(40, 68, 555, 68);
+    return 86;
+  }
+
   private dibujarBloqueDonutBarrasPdf(
     doc: jsPDF,
     x: number,
@@ -560,5 +583,23 @@ export class ExportService {
 
   private asegurarExt(filename: string, ext: 'xlsx' | 'pdf'): string {
     return filename.toLowerCase().endsWith('.' + ext) ? filename : `${filename}.${ext}`;
+  }
+
+  private precargarLogo(): void {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+      ctx.drawImage(img, 0, 0);
+      this.logoDataUrl = canvas.toDataURL('image/png');
+    };
+    img.onerror = () => {
+      this.logoDataUrl = null;
+    };
+    img.src = '/logo.png';
   }
 }

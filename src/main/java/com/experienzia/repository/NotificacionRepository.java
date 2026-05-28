@@ -6,12 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Repositorio JPA de {@link Notificacion}: bandeja de avisos por usuario.
- */
+// Bandeja de avisos por usuario en la BD (campanita del front)
 @Repository
 public interface NotificacionRepository extends JpaRepository<Notificacion, Long> {
 
-    /** Notificaciones de un usuario, las más recientes primero. */
+    // Notificaciones de un usuario, las más recientes primero para pintar la lista
     List<Notificacion> findByUsuarioIdOrderByFechaDesc(Long usuarioId);
 }

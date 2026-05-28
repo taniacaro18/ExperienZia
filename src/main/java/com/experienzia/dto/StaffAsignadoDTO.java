@@ -4,7 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-
+// Cómo listo al staff de un evento en el panel del organizador (viene de staff_evento_asignaciones).
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

@@ -11,50 +11,66 @@ import com.experienzia.entity.FuncionStaff;
 
 import java.util.List;
 
-/**
- * Interfaz del servicio InscripcionService.
- * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
- */
+// Inscripciones, check-in/out, carga masiva de asistentes y asignación de staff al evento
 public interface InscripcionService {
+
+    // Asistente se apunta a un evento (valido aforo y duplicados en la BD)
     InscripcionDTO inscribir(Long usuarioId, Long eventoId);
 
-    /**
-     * Inscribe automáticamente al organizador como asistente de su propio evento.
-     * Se invoca cuando el evento pasa a ACTIVO (tras aprobarse el pago).
-     * Es idempotente: si ya está inscrito, no hace nada y devuelve null.
-     */
+    // Cuando el evento queda ACTIVO meto al organizador como asistente; si ya está, no hago nada
     InscripcionDTO inscribirOrganizadorEnSuEvento(Long eventoId);
 
+    // Cancela inscripción y bajo aforo si aplica
     InscripcionDTO cancelar(Long inscripcionId);
+
+    // Staff hace check-in manual por id de inscripción
     InscripcionDTO checkIn(Long inscripcionId, Long staffUsuarioId);
+
+    // Staff escanea QR en puerta (valido que sea de ese evento)
     InscripcionDTO checkInPorQR(String codigoQR, Long staffUsuarioId, Long eventoId);
+
+    // Registro de salida manual
     InscripcionDTO checkOut(Long inscripcionId, Long staffUsuarioId);
+
+    // Salida escaneando QR
     InscripcionDTO checkOutPorQR(String codigoQR, Long staffUsuarioId, Long eventoId);
+
+    // Lista de inscripciones de un evento
     List<InscripcionDTO> listarPorEvento(Long eventoId);
+
+    // Mis inscripciones como usuario
     List<InscripcionDTO> listarPorUsuario(Long usuarioId);
+
+    // Panel staff: asistentes con búsqueda (valido que el staff esté asignado)
     List<AsistenteEventoDTO> listarAsistentesParaStaff(Long eventoId, Long staffUsuarioId, String busqueda);
 
-    /** Igual que listarAsistentesParaStaff pero validando que quien consulta es el organizador del evento. */
+    // Igual pero solo si quien consulta es el organizador del evento
     List<AsistenteEventoDTO> listarAsistentesParaOrganizador(Long eventoId, Long organizadorId, String busqueda);
+
+    // Aforo en vivo para el front (dentro/fuera/cupo)
     AforoEnVivoDTO consultarAforoEnVivo(Long eventoId);
+
+    // Carga manual fila por fila desde el front del organizador
     ResultadoCargaAsistentesDTO cargarAsistentesManual(Long eventoId, Long organizadorId, List<FilaAsistenteCargaDTO> filas);
+
+    // Carga masiva por CSV (mismo flujo, otro formato)
     ResultadoCargaAsistentesDTO cargarAsistentesCsv(Long eventoId, Long organizadorId, String contenidoCsv);
 
-    /** Asigna un staff a un evento con una función específica (CHECK_IN_QR, CHECK_IN_MANUAL, REGISTRO_SALIDA, GENERAL). */
+    // Organizador asigna staff con función (QR, manual, salida, general)
     void asignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion);
 
-    /** Cambia la función asignada a un staff dentro de un evento. */
+    // Cambio la función de un staff ya asignado
     StaffAsignadoDTO cambiarFuncionStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion);
 
-    /** Quita un staff del evento. */
+    // Quito staff del evento
     void desasignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId);
 
-    /** Listado plano de IDs (compatibilidad con clientes anteriores). */
+    // Solo ids (clientes viejos del front)
     List<Long> listarStaffIdsPorEvento(Long eventoId);
 
-    /** Listado enriquecido del staff asignado al evento con su función. */
+    // Lista con nombre y función para pintar en el panel
     List<StaffAsignadoDTO> listarStaffPorEvento(Long eventoId);
 
-    /** Eventos asignados al usuario STAFF (para su panel) con info completa del evento. */
+    // Eventos donde trabajo como staff (mi panel)
     List<EventoStaffDTO> listarEventosDelStaff(Long staffUsuarioId);
 }

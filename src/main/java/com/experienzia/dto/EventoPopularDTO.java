@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Un ítem del top de eventos populares que armo para el dashboard admin.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

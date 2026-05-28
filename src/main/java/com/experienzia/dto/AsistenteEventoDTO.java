@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Fila de asistente en reportes/listados — junta datos de inscripción + usuario sin ir al front a otra API.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -17,6 +18,7 @@ public class AsistenteEventoDTO {
 
     private Long usuarioId;
 
+    // Datos personales para la tabla
     private String nombre;
     
     private String email;
@@ -27,6 +29,7 @@ public class AsistenteEventoDTO {
 
     private String numeroDocumento;
 
+    // QR y estado de asistencia el día del evento
     private String codigoQR;
 
     private EstadoInscripcion estadoInscripcion;

@@ -1,13 +1,8 @@
 package com.experienzia.entity;
 
-/**
- * Enum del estado de una {@link Inscripcion} de un asistente a un evento.
- */
+// Estado de una fila en inscripciones — desde que reserva hasta que asiste o cancela.
 public enum EstadoInscripcion {
-    /** Tiene plaza reservada. */
-    INSCRITO,
-    /** Dejó de asistir o anuló la inscripción. */
-    CANCELADO,
-    /** Entró al evento (check-in realizado). */
-    ASISTIO
+    INSCRITO,   // tiene cupo
+    CANCELADO,  // ya no va
+    ASISTIO     // hizo check-in (o lo marqué como asistió)
 }

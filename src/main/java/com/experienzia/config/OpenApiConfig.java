@@ -9,10 +9,9 @@ import io.swagger.v3.oas.models.info.Contact;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.info.License;
 
-
+// Texto que sale en Swagger para que el profe vea qué cubre la API
 @Configuration
 public class OpenApiConfig {
-
 
 	@Bean
 	public OpenAPI experienziaOpenAPI() {

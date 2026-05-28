@@ -28,36 +28,19 @@ import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * Servicio de pagos. El pago lo realiza siempre el ORGANIZADOR del evento
- * para activar su evento (tarifa de la plataforma = duracionHoras * precioPorHora).
- * Los asistentes y el staff NO interactúan con los pagos.
- */
+// Solo el ORGANIZADOR paga la tarifa del evento (horas × precio); asistentes y staff no tocan pagos.
 @Service
 @Transactional
-/**
- * Clase de implementación del módulo Pago.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
 public class PagoServiceImpl implements PagoService {
 
-    /** Dato del campo pago repository */
     private final PagoRepository pagoRepository;
-    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
-    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
-    /** Dato del campo file storage service */
     private final FileStorageService fileStorageService;
-    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
-    /** Dato del campo auditoria service */
     private final AuditoriaService auditoriaService;
-    /** Dato del campo evento service */
     private final EventoService eventoService;
-    /** Dato del campo inscripcion service */
     private final InscripcionService inscripcionService;
-    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
 
     public PagoServiceImpl(PagoRepository pagoRepository,
@@ -81,7 +64,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
-    /** Ejecuta `registrar` (lógica del servicio). */
+    // Subida de comprobante: estados APROBADO, PENDIENTE_SUPLEMENTO o complemento raro en ACTIVO.
     public PagoDTO registrar(Long eventoId, Long organizadorId, MultipartFile archivo, String direccionIp) {
         if (eventoId == null) {
             throw new CustomException("El evento es requerido.", HttpStatus.BAD_REQUEST);
@@ -177,11 +160,16 @@ public class PagoServiceImpl implements PagoService {
         Pago guardado = pagoRepository.save(pago);
 
         auditoriaService.registrar(organizadorId, "PAGO_REGISTRADO", "Pago", guardado.getId(), direccionIp);
+        eventoRepository.findById(eventoId).ifPresent(ev ->
+                notificacionService.notificarAdministradores(
+                        "El organizador subió comprobante de pago para el evento «" + ev.getNombre()
+                                + "» (monto " + EventoFinanzasHelper.copTexto(guardado.getMonto()) + " COP).",
+                        TipoNotificacion.INFO));
         return toDto(guardado);
     }
 
     @Override
-    /** Ejecuta `aprobar` (lógica del servicio). */
+    // Admin aprueba: activo evento, uno al organizador como asistente; try/catch para no revertir el pago.
     public PagoDTO aprobar(Long pagoId, Long aprobadorId, String direccionIp) {
         assertAdministradorPuedeGestionarPagos(aprobadorId);
         Pago pago = pagoRepository.findById(pagoId)
@@ -200,7 +188,7 @@ public class PagoServiceImpl implements PagoService {
         pago.setAprobadorId(aprobadorId);
         pago.setFechaResolucion(LocalDateTime.now());
 
-        /** Comprobante de complemento (delta sobre monto ya aprobado); el evento puede seguir ACTIVO u otro estado. */
+        // Si había saldoAprobadoPrevio, al aprobar sumo delta + lo ya pagado en un solo monto.
         AtomicBoolean teniaSaldoComplemento = new AtomicBoolean(false);
         eventoRepository.findById(pago.getEventoId()).ifPresent(ev -> {
             double total = ev.getCosto();
@@ -234,7 +222,7 @@ public class PagoServiceImpl implements PagoService {
             }
             inscripcionService.inscribirOrganizadorEnSuEvento(guardado.getEventoId());
         } catch (RuntimeException ex) {
-            // El pago ya quedó APROBADO; no revertir si activación o inscripción del organizador falla por estado/cupo.
+            // El pago ya quedó APROBADO en BD; no hago rollback si activar o inscribir organizador falla.
         }
 
         auditoriaService.registrar(aprobadorId, "PAGO_APROBADO", "Pago", guardado.getId(), direccionIp);
@@ -242,7 +230,7 @@ public class PagoServiceImpl implements PagoService {
     }
 
     @Override
-    /** Ejecuta `rechazar` (lógica del servicio). */
+    // Rechazo: suplemento solo borra comprobante; pago inicial pasa a RECHAZADO.
     public PagoDTO rechazar(Long pagoId, String motivo, Long aprobadorId, String direccionIp) {
         if (motivo == null || motivo.isBlank()) {
             throw new CustomException("El motivo de rechazo es obligatorio.", HttpStatus.BAD_REQUEST);
@@ -288,30 +276,27 @@ public class PagoServiceImpl implements PagoService {
         return toDto(guardado);
     }
 
+    // Cola del admin: pagos con comprobante esperando validación.
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPendientes` (lógica del servicio). */
     public List<PagoDTO> listarPendientes() {
         return pagoRepository.findByEstado(EstadoPago.PENDIENTE).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarTodos` (lógica del servicio). */
     public List<PagoDTO> listarTodos() {
         return pagoRepository.findAll().stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPorOrganizador` (lógica del servicio). */
     public List<PagoDTO> listarPorOrganizador(Long organizadorId) {
         return pagoRepository.findByOrganizadorId(organizadorId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `obtenerPorEvento` (lógica del servicio). */
     public Optional<PagoDTO> obtenerPorEvento(Long eventoId) {
         if (eventoId == null) {
             return Optional.empty();
@@ -321,8 +306,7 @@ public class PagoServiceImpl implements PagoService {
 
     private PagoDTO toDto(Pago pago) {
         PagoDTO dto = modelMapper.map(pago, PagoDTO.class);
-        // Enriquecemos con datos del evento y del organizador para que el admin
-        // pueda ver la información directamente sin más llamadas.
+        // Meto nombre de evento y organizador para la tabla del admin sin N llamadas al front.
         eventoRepository.findById(pago.getEventoId()).ifPresent(ev -> {
             dto.setNombreEvento(ev.getNombre());
             dto.setFechaEvento(ev.getFecha());

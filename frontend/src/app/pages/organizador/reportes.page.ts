@@ -46,6 +46,7 @@ export class OrgReportesPage {
   readonly eventoSeleccionado = signal<number | null>(null);
   readonly reporte = signal<ReporteEventoAvanzado | null>(null);
   readonly vistaPreviaVisible = signal(false);
+  readonly panelAbierto = signal<'filtros' | 'analisis' | null>('filtros');
 
   readonly filtroTipoEvento = signal<'TODOS' | 'PUBLICO' | 'PRIVADO'>('TODOS');
   readonly fechaDesde = signal('');
@@ -169,6 +170,10 @@ export class OrgReportesPage {
 
   abrirVistaPrevia() {
     if (this.reporte()) this.vistaPreviaVisible.set(true);
+  }
+
+  togglePanel(panel: 'filtros' | 'analisis') {
+    this.panelAbierto.set(this.panelAbierto() === panel ? null : panel);
   }
 
   porcentajeAsistenciaSalida(r: ReporteEventoAvanzado): number {

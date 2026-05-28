@@ -1,16 +1,9 @@
 package com.experienzia.entity;
 
-/**
- * Enum (no es tabla): indica qué tarea hace un STAFF en un evento concreto.
- * Se guarda como texto en {@link StaffEventoAsignacion}.
- */
+// Qué hace el staff en puerta — va en staff_evento_asignaciones como STRING, no es tabla aparte.
 public enum FuncionStaff {
-    /** Escanear el código QR del asistente al entrar. */
-    CHECK_IN_QR,
-    /** Registrar entrada a mano sin QR. */
-    CHECK_IN_MANUAL,
-    /** Marcar la salida (check-out) del asistente. */
-    REGISTRO_SALIDA,
-    /** Varias tareas o sin rol fijo; valor por defecto. */
-    GENERAL
+    CHECK_IN_QR,      // escanea QR
+    CHECK_IN_MANUAL,  // marca entrada a mano
+    REGISTRO_SALIDA,  // check-out
+    GENERAL           // de todo un poco (default)
 }

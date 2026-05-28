@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Un punto hora a hora de la curva de ingresos/salidas en el reporte avanzado.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

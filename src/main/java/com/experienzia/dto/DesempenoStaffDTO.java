@@ -2,6 +2,7 @@ package com.experienzia.dto;
 
 import lombok.Data;
 
+// Métricas por staff dentro del ReporteEventoAvanzadoDTO (cuento QR vs manual).
 @Data
 
 public class DesempenoStaffDTO {

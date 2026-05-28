@@ -1,13 +1,8 @@
 package com.experienzia.entity;
 
-/**
- * Enum del tipo visual o de prioridad de una {@link Notificacion}.
- */
+// Tipo de la notificación para pintar distinto en el front (color/icono).
 public enum TipoNotificacion {
-    /** Mensaje informativo normal. */
-    INFO,
-    /** Aviso importante que requiere atención. */
-    ALERTA,
-    /** Algo falló o es crítico. */
-    ERROR
+    INFO,    // aviso normal
+    ALERTA,  // importante, que lo vean
+    ERROR    // algo falló o es grave
 }

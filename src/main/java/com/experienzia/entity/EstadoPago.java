@@ -1,13 +1,8 @@
 package com.experienzia.entity;
 
-/**
- * Enum del estado de un {@link Pago} de tarifa de plataforma hecho por el organizador.
- */
+// Estado del comprobante que sube el organizador en pagos — el admin lo mueve de PENDIENTE.
 public enum EstadoPago {
-    /** Comprobante subido, esperando revisión del admin. */
-    PENDIENTE,
-    /** Admin validó el pago; el evento puede avanzar. */
-    APROBADO,
-    /** Admin rechazó el comprobante. */
-    RECHAZADO
+    PENDIENTE,  // esperando revisión
+    APROBADO,   // listo, el evento puede seguir
+    RECHAZADO   // comprobante no válido
 }

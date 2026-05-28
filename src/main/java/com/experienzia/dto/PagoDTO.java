@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Comprobante de tarifa ExperienZia — NO es el pago del asistente al evento, es del organizador a nosotros.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -35,6 +36,7 @@ public class PagoDTO {
     
     private LocalDateTime fechaResolucion;
 
+    // Info extra para las tablas del admin
     private String nombreEvento;
 
     private LocalDateTime fechaEvento;

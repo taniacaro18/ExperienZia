@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Devuelvo esto en el endpoint de aforo en vivo — lo pinta el staff/organizador durante el evento.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -14,6 +15,7 @@ public class AforoEnVivoDTO {
 
     private String nombreEvento;
 
+    // Cupos y contadores
     private int aforoMaximo;
 
     private long inscritos;

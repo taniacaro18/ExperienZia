@@ -34,6 +34,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// Inscripciones, check-in/out, carga masiva de asistentes y staff del evento
 @RestController
 public class InscripcionController {
 
@@ -83,6 +84,7 @@ public class InscripcionController {
         return ResponseEntity.ok(ins);
     }
 
+    // Salida manual; mismo DTO que check-in (staffUsuarioId)
     @PutMapping("/api/inscripciones/{id}/check-out")
     public ResponseEntity<InscripcionDTO> checkOut(@PathVariable Long id, @RequestBody CheckInDTO body,
                                                      HttpServletRequest request) {
@@ -95,6 +97,7 @@ public class InscripcionController {
         return ResponseEntity.ok(ins);
     }
 
+    // Staff escanea QR en la puerta del evento
     @PostMapping("/api/inscripciones/check-in/qr")
     public ResponseEntity<InscripcionDTO> checkInPorQR(@RequestBody CheckInDTO body, HttpServletRequest request) {
         if (body == null || body.getStaffUsuarioId() == null || body.getCodigoQR() == null) {
@@ -212,6 +215,7 @@ public class InscripcionController {
         }
     }
 
+    // Lista para la app del staff en puerta (puede filtrar con q)
     @GetMapping("/api/eventos/{eventoId}/asistentes")
     public ResponseEntity<List<AsistenteEventoDTO>> listarAsistentesParaStaff(@PathVariable Long eventoId,
                                                                               @RequestParam Long staffUsuarioId,
@@ -226,6 +230,7 @@ public class InscripcionController {
         return ResponseEntity.ok(inscripcionService.listarAsistentesParaOrganizador(eventoId, organizadorId, q));
     }
 
+    // Aforo en vivo para el panel del organizador durante el evento
     @GetMapping("/api/eventos/{eventoId}/aforo")
     public ResponseEntity<AforoEnVivoDTO> aforoEnVivo(@PathVariable Long eventoId) {
         return ResponseEntity.ok(inscripcionService.consultarAforoEnVivo(eventoId));

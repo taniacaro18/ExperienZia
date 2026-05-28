@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Una fila dentro de CargaAsistentesManualDTO — datos mínimos para crear o inscribir al asistente.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

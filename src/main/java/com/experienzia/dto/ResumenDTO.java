@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Tres contadores globales que a veces devuelvo en endpoints de resumen rápido.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

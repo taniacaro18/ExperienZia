@@ -6,6 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Mapeo del certificado para el front/PDF cuando el asistente descarga o valida el código.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -22,6 +23,7 @@ public class CertificadoDTO {
 
     private String codigoUnico;
 
+    // Textos que salen impresos en el certificado
     private String nombreAsistente;
 
     private String numeroDocumento;

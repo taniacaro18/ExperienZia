@@ -22,8 +22,19 @@
     }
   </div>
 
-  <!-- Filtros alcance organizador -->
-  <div class="ez-card flex flex-wrap items-end gap-3">
+  <!-- Tarjeta desplegable: filtros -->
+  <section class="ez-card p-0 overflow-hidden">
+    <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left bg-white"
+            (click)="togglePanel('filtros')">
+      <div>
+        <h2 class="ez-card-title !mb-1">Filtros y selección de evento</h2>
+        <p class="text-xs text-surface-500">Elige modalidad, rango de fecha y evento a analizar.</p>
+      </div>
+      <i class="pi" [class.pi-chevron-down]="panelAbierto() !== 'filtros'" [class.pi-chevron-up]="panelAbierto() === 'filtros'"></i>
+    </button>
+    @if (panelAbierto() === 'filtros') {
+    <div class="px-5 pb-5 border-t border-surface-100">
+  <div class="mt-4 flex flex-wrap items-end gap-3">
     <div>
       <label class="ez-field-label text-[11px]">Modalidad del evento</label>
       <div class="flex gap-1 flex-wrap mt-1">
@@ -55,7 +66,7 @@
   </div>
 
   <!-- Selector evento -->
-  <div class="ez-card">
+  <div class="ez-card mt-4">
     <label class="ez-field-label">
       Evento
     </label>
@@ -73,12 +84,26 @@
                 appendTo="body"></p-select>
     }
   </div>
+    </div>
+    }
+  </section>
 
   @if (cargandoReporte()) {
     <div class="flex justify-center py-16">
       <p-progressSpinner styleClass="!w-12 !h-12" strokeWidth="4"></p-progressSpinner>
     </div>
   } @else if (reporte(); as r) {
+    <section class="ez-card p-0 overflow-hidden">
+      <button type="button" class="w-full px-5 py-4 flex items-center justify-between text-left bg-white"
+              (click)="togglePanel('analisis')">
+        <div>
+          <h2 class="ez-card-title !mb-1">Análisis de rendimiento</h2>
+          <p class="text-xs text-surface-500">Vista del evento con gráficas y desempeño de staff.</p>
+        </div>
+        <i class="pi" [class.pi-chevron-down]="panelAbierto() !== 'analisis'" [class.pi-chevron-up]="panelAbierto() === 'analisis'"></i>
+      </button>
+      @if (panelAbierto() === 'analisis') {
+      <div class="px-5 pb-5 border-t border-surface-100">
     <h2 class="ez-card-title !mb-0">
       Análisis de Rendimiento: {{ r.nombreEvento }}
     </h2>
@@ -192,6 +217,9 @@
         </div>
       }
     </div>
+      </div>
+      }
+    </section>
   } @else if (eventoSeleccionado()) {
     <div class="bg-brand-50 border border-brand-200 rounded-xl p-10 text-center">
       <i class="pi pi-chart-bar text-5xl text-brand-300 mb-3"></i>

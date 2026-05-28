@@ -8,6 +8,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Inscripción enriquecida para "mis eventos" y listados del organizador — evito N+1 llamadas en el front.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
@@ -29,7 +30,7 @@ public class InscripcionDTO {
 
     private String codigoQR;
 
-
+    // Datos denormalizados para no pedir otro endpoint
     private String nombreAsistente;
 
     private String emailAsistente;

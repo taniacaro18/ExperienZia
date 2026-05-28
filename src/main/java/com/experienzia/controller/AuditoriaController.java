@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.experienzia.dto.AuditoriaDTO;
 import com.experienzia.service.AuditoriaService;
 
+// Solo admin debería usar esto: quién hizo qué y desde qué IP
 @RestController
 @RequestMapping("/api/auditoria")
 public class AuditoriaController {
@@ -26,11 +27,14 @@ public class AuditoriaController {
         return ResponseEntity.ok(auditoriaService.listarTodo());
     }
 
+    // Historial de un usuario concreto (quién hizo qué)
     @GetMapping("/usuario/{usuarioId}")
     public ResponseEntity<List<AuditoriaDTO>> listarPorUsuario(@PathVariable Long usuarioId) {
         return ResponseEntity.ok(auditoriaService.listarPorUsuario(usuarioId));
     }
 
+    // Filtrar por tipo de entidad: Evento, Usuario, Inscripcion...
+    // Filtrar por tipo de entidad: Evento, Usuario, Inscripcion...
     @GetMapping("/entidad/{tipo}")
     public ResponseEntity<List<AuditoriaDTO>> listarPorEntidad(@PathVariable String tipo) {
         return ResponseEntity.ok(auditoriaService.listarPorEntidad(tipo));

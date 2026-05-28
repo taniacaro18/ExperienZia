@@ -26,17 +26,37 @@
   <!-- Filtros -->
   <div class="ez-card">
     <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-      <div class="md:col-span-5 ez-field !mb-0">
+      <div class="md:col-span-4 ez-field !mb-0">
         <label class="ez-field-label">Buscar</label>
         <span class="block relative">
           <i class="pi pi-search absolute left-3 top-1/2 -translate-y-1/2 text-surface-400 text-xs"></i>
           <input [ngModel]="busqueda()"
                  (ngModelChange)="busqueda.set($event)"
                  class="ez-input pl-9"
-                 placeholder="NOMBRE, CATEGORÍA O DESCRIPCIÓN" />
+                 placeholder="Nombre, categoría o descripción" />
         </span>
       </div>
-      <div class="md:col-span-3 ez-field !mb-0">
+      <div class="md:col-span-2 ez-field !mb-0">
+        <label class="ez-field-label">Categoría</label>
+        <p-select [options]="opcionesCategoria()"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="filtroCategoria()"
+                  (ngModelChange)="filtroCategoria.set($event)"
+                  styleClass="w-full"
+                  appendTo="body"></p-select>
+      </div>
+      <div class="md:col-span-2 ez-field !mb-0">
+        <label class="ez-field-label">Tipo de evento</label>
+        <p-select [options]="opcionesTipoEvento"
+                  optionLabel="label"
+                  optionValue="value"
+                  [ngModel]="filtroTipoEvento()"
+                  (ngModelChange)="filtroTipoEvento.set($event)"
+                  styleClass="w-full"
+                  appendTo="body"></p-select>
+      </div>
+      <div class="md:col-span-2 ez-field !mb-0">
         <label class="ez-field-label">Estado</label>
         <p-select [options]="opcionesEstado"
                   optionLabel="label"
@@ -46,7 +66,7 @@
                   styleClass="w-full"
                   appendTo="body"></p-select>
       </div>
-      <div class="md:col-span-3 ez-field !mb-0">
+      <div class="md:col-span-2 ez-field !mb-0">
         <label class="ez-field-label">Ordenar por</label>
         <p-select [options]="opcionesOrden"
                   optionLabel="label"
@@ -56,10 +76,10 @@
                   styleClass="w-full"
                   appendTo="body"></p-select>
       </div>
-      <div class="md:col-span-1 flex md:justify-end">
-        <button type="button" (click)="limpiarFiltros()" class="ez-btn-ghost ez-btn-sm" title="Limpiar filtros">
+      <div class="md:col-span-12 flex justify-end pt-1">
+        <button type="button" (click)="limpiarFiltros()" class="ez-btn-ghost ez-btn-sm">
           <i class="pi pi-filter-slash text-[10px]"></i>
-          Limpiar
+          Limpiar filtros
         </button>
       </div>
     </div>
@@ -106,10 +126,13 @@
           @for (e of eventosFiltrados(); track e.id) {
             <tr>
               <td>
-                <div class="font-bold text-surface-900">{{ e.nombre }}</div>
-                <div class="text-[11px] text-surface-500">
-                  {{ e.tipoEvento }} @if (e.categoria) { · {{ e.categoria }} }
+                <div class="flex items-center gap-2 flex-wrap mb-1">
+                  <app-tipo-evento-badge [tipo]="e.tipoEvento" />
+                  @if (e.categoria) {
+                    <span class="text-[10px] text-surface-500 uppercase">{{ e.categoria }}</span>
+                  }
                 </div>
+                <div class="font-bold text-surface-900">{{ e.nombre }}</div>
               </td>
               <td>
                 <span class="ez-badge"

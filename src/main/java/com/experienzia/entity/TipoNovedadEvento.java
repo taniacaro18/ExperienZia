@@ -1,17 +1,13 @@
 package com.experienzia.entity;
 
-/**
- * Enum: qué clase de cambio pidió el organizador en un {@link EventoNovedad}.
- */
+// Qué pidió cambiar el organizador en evento_novedades — el admin revisa según el tipo.
 public enum TipoNovedadEvento {
-    /** Cambió nombre, descripción, ubicación, etc. */
+    // Cambios de texto/lugar sin tocar horas de pago
     EDICION_METADATOS,
-    /** Cambió si es público/privado o la categoría. */
     EDICION_TIPO_CATEGORIA,
-    /** Quiere alargar la duración (puede implicar pago extra). */
+    // Cambios de duración (pueden generar suplemento o penalización)
     AUMENTO_HORAS,
-    /** Quiere acortar horas (puede tener penalización). */
     DISMINUCION_HORAS,
-    /** Pide cancelar el evento; el admin decide. */
+    // Quiere cancelar el evento
     CANCELACION_SOLICITUD
 }

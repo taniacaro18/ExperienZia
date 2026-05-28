@@ -20,6 +20,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// Panel admin: aprobar organizadores, desactivar cuentas, cambiar roles
 @RestController
 @RequestMapping("/api/admin/usuarios")
 public class AdminUsuarioController {
@@ -36,6 +37,7 @@ public class AdminUsuarioController {
         this.auditoriaService = auditoriaService;
     }
 
+    // Organizador nuevo queda ACTIVO y le llega noti al front
     @PutMapping("/{id}/aprobar")
     public ResponseEntity<UsuarioDTO> aprobarOrganizador(
             @PathVariable Long id,
@@ -50,6 +52,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
+    // Organizador que pidió cuenta y el admin dice que no
     @PutMapping("/{id}/rechazar")
     public ResponseEntity<UsuarioDTO> rechazarOrganizador(@PathVariable Long id,
                                                           @RequestParam(required = false) Long adminId,
@@ -89,6 +92,7 @@ public class AdminUsuarioController {
         return ResponseEntity.ok(u);
     }
 
+    // Cambio rol (STAFF, ORGANIZADOR...) — adminId en query es para auditoría nada más
     @PutMapping("/{id}/rol")
     public ResponseEntity<UsuarioDTO> cambiarRol(@PathVariable Long id,
                                                  @RequestBody CambiarRolDTO body,

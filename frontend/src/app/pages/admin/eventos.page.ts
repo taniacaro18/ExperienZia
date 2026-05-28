@@ -6,6 +6,7 @@ import { ActivatedRoute, RouterLink } from '@angular/router';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
 import { TagModule } from 'primeng/tag';
 import { InputTextModule } from 'primeng/inputtext';
+import { SelectModule } from 'primeng/select';
 import { TextareaModule } from 'primeng/textarea';
 import { DialogModule } from 'primeng/dialog';
 import { MessageService } from 'primeng/api';
@@ -25,6 +26,7 @@ import { SalonDisponibilidadDialogComponent } from '../../shared/salon-disponibi
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { AforoBarComponent } from '../../shared/aforo-bar/aforo-bar.component';
 import { eventoEstadoLabel, eventoEstadoSeverity } from '../../shared/estado.helpers';
+import { TipoEventoBadgeComponent } from '../../shared/tipo-evento-badge/tipo-evento-badge.component';
 
 type FiltroEstado = 'TODOS' | EstadoEvento;
 type FiltroTipoEvento = 'TODOS' | 'PUBLICO' | 'PRIVADO';
@@ -41,11 +43,13 @@ type FiltroTipoEvento = 'TODOS' | 'PUBLICO' | 'PRIVADO';
     ProgressSpinnerModule,
     TagModule,
     InputTextModule,
+    SelectModule,
     TextareaModule,
     DialogModule,
     StatCardComponent,
     AforoBarComponent,
-    SalonDisponibilidadDialogComponent
+    SalonDisponibilidadDialogComponent,
+    TipoEventoBadgeComponent
   ],
   templateUrl: './eventos.page.html',
   styleUrl: './eventos.page.scss'
@@ -65,6 +69,7 @@ export class AdminEventosPage {
   readonly busqueda = signal('');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
   readonly filtroTipoEvento = signal<FiltroTipoEvento>('TODOS');
+  readonly filtroCategoria = signal('');
   readonly fechaDesde = signal('');
   readonly fechaHasta = signal('');
   readonly procesando = signal<number | null>(null);
@@ -118,13 +123,29 @@ export class AdminEventosPage {
     };
   });
 
+  readonly opcionesCategoria = computed(() => {
+    const set = new Set<string>();
+    for (const e of this.eventos()) {
+      const c = e.categoria?.trim();
+      if (c) set.add(c);
+    }
+    return [
+      { label: 'Todas', value: '' },
+      ...Array.from(set)
+        .sort((a, b) => a.localeCompare(b))
+        .map((c) => ({ label: c, value: c }))
+    ];
+  });
+
   readonly eventosFiltrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
     const f = this.filtroEstado();
     const ft = this.filtroTipoEvento();
+    const cat = this.filtroCategoria().trim().toLowerCase();
     let lista = [...this.eventos()];
     if (f !== 'TODOS') lista = lista.filter((e) => e.estado === f);
     if (ft !== 'TODOS') lista = lista.filter((e) => e.tipoEvento === ft);
+    if (cat) lista = lista.filter((e) => (e.categoria || '').toLowerCase() === cat);
     const d1 = this.fechaDesde();
     const d2 = this.fechaHasta();
     if (d1) {
@@ -175,6 +196,15 @@ export class AdminEventosPage {
       if (q) this.busqueda.set(q);
     });
     this.cargar();
+  }
+
+  limpiarFiltros() {
+    this.busqueda.set('');
+    this.filtroEstado.set('TODOS');
+    this.filtroTipoEvento.set('TODOS');
+    this.filtroCategoria.set('');
+    this.fechaDesde.set('');
+    this.fechaHasta.set('');
   }
 
   cargar() {

@@ -7,21 +7,19 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Repositorio JPA de {@link Certificado}: emitidos por usuario, evento o código de verificación.
- */
+// Certificados emitidos en la BD: por usuario, evento o código de verificación pública
 @Repository
 public interface CertificadoRepository extends JpaRepository<Certificado, Long> {
 
-    /** Todos los certificados de un asistente. */
+    // Todos los certificados de un asistente (su lista en el front)
     List<Certificado> findByUsuarioId(Long usuarioId);
 
-    /** Certificados generados para un evento. */
+    // Certificados de un evento (organizador revisa quién ya tiene)
     List<Certificado> findByEventoId(Long eventoId);
 
-    /** Validar un certificado desde su código público. */
+    // Página pública de validación: busco por el código que pegan en el front
     Optional<Certificado> findByCodigoUnico(String codigoUnico);
 
-    /** ¿Ya tiene certificado este usuario en este evento? */
+    // Evito duplicar: ¿ya le generé certificado a este usuario en este evento?
     Optional<Certificado> findByUsuarioIdAndEventoId(Long usuarioId, Long eventoId);
 }

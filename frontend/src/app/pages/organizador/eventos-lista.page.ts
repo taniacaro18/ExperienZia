@@ -13,13 +13,15 @@ import { ConfirmationService, MessageService } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { AuthStore } from '../../core/auth/auth.store';
 import { EventoApi } from '../../core/api/evento.api';
-import { EstadoEvento, Evento } from '../../core/models/domain.models';
+import { EstadoEvento, Evento, TipoEvento } from '../../core/models/domain.models';
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { AforoBarComponent } from '../../shared/aforo-bar/aforo-bar.component';
 import { eventoEstadoLabel, eventoEstadoSeverity } from '../../shared/estado.helpers';
 import { eventoVentanaYaCerro } from '../../shared/evento-catalogo.helpers';
+import { TipoEventoBadgeComponent } from '../../shared/tipo-evento-badge/tipo-evento-badge.component';
 
 type FiltroEstado = 'TODOS' | EstadoEvento;
+type FiltroTipo = 'TODOS' | TipoEvento;
 type Orden = 'FECHA_DESC' | 'FECHA_ASC' | 'NOMBRE' | 'AFORO';
 
 @Component({
@@ -38,7 +40,8 @@ type Orden = 'FECHA_DESC' | 'FECHA_ASC' | 'NOMBRE' | 'AFORO';
     SelectModule,
     ConfirmDialogModule,
     StatCardComponent,
-    AforoBarComponent
+    AforoBarComponent,
+    TipoEventoBadgeComponent
   ],
   providers: [ConfirmationService],
   templateUrl: './eventos-lista.page.html'
@@ -77,6 +80,8 @@ export class OrgEventosListaPage {
 
   readonly busqueda = signal('');
   readonly filtroEstado = signal<FiltroEstado>('TODOS');
+  readonly filtroCategoria = signal('');
+  readonly filtroTipoEvento = signal<FiltroTipo>('TODOS');
   readonly orden = signal<Orden>('FECHA_DESC');
 
   readonly opcionesEstado = [
@@ -91,6 +96,26 @@ export class OrgEventosListaPage {
     { label: 'Cancelados', value: 'CANCELADO' },
     { label: 'Finalizados', value: 'FINALIZADO' }
   ];
+
+  readonly opcionesTipoEvento = [
+    { label: 'Todos los tipos', value: 'TODOS' as FiltroTipo },
+    { label: 'Público', value: 'PUBLICO' as FiltroTipo },
+    { label: 'Privado', value: 'PRIVADO' as FiltroTipo }
+  ];
+
+  readonly opcionesCategoria = computed(() => {
+    const set = new Set<string>();
+    for (const e of this.eventos()) {
+      const c = e.categoria?.trim();
+      if (c) set.add(c);
+    }
+    return [
+      { label: 'Todas las categorías', value: '' },
+      ...Array.from(set)
+        .sort((a, b) => a.localeCompare(b))
+        .map((c) => ({ label: c, value: c }))
+    ];
+  });
 
   readonly opcionesOrden = [
     { label: 'Más recientes', value: 'FECHA_DESC' },
@@ -114,9 +139,17 @@ export class OrgEventosListaPage {
   readonly eventosFiltrados = computed(() => {
     const q = this.busqueda().trim().toLowerCase();
     const est = this.filtroEstado();
+    const cat = this.filtroCategoria().trim().toLowerCase();
+    const tipo = this.filtroTipoEvento();
     let lista = [...this.eventos()];
     if (est !== 'TODOS') {
       lista = lista.filter((e) => e.estado === est);
+    }
+    if (tipo !== 'TODOS') {
+      lista = lista.filter((e) => e.tipoEvento === tipo);
+    }
+    if (cat) {
+      lista = lista.filter((e) => (e.categoria || '').toLowerCase() === cat);
     }
     if (q) {
       lista = lista.filter(
@@ -171,6 +204,8 @@ export class OrgEventosListaPage {
   limpiarFiltros() {
     this.busqueda.set('');
     this.filtroEstado.set('TODOS');
+    this.filtroCategoria.set('');
+    this.filtroTipoEvento.set('TODOS');
     this.orden.set('FECHA_DESC');
   }
 

@@ -5,7 +5,7 @@ import java.util.List;
 
 import lombok.Data;
 
-
+// Reporte post-evento con curva horaria y tabla de desempeño del staff — más pesado que ReporteEventoDTO.
 @Data
 
 public class ReporteEventoAvanzadoDTO {
@@ -28,6 +28,7 @@ public class ReporteEventoAvanzadoDTO {
 
     private double porcentajeAsistencia;
 
+    // Check-in/out desglosados
     private long checkInsTotal;
 
     private long checkInsPorQR;

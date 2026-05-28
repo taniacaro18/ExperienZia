@@ -17,6 +17,7 @@ import com.experienzia.dto.CertificadoDTO;
 import com.experienzia.service.CertificadoService;
 import com.experienzia.service.export.ExportService;
 
+// Certificados de asistencia: generar, validar por código público, bajar PDF
 @RestController
 @RequestMapping("/api/certificados")
 public class CertificadoController {
@@ -29,6 +30,7 @@ public class CertificadoController {
         this.exportService = exportService;
     }
 
+    // Un certificado por inscripción con check-in hecho
     @PostMapping("/generar/{inscripcionId}")
     public ResponseEntity<CertificadoDTO> generar(
             @PathVariable Long inscripcionId) {
@@ -40,6 +42,7 @@ public class CertificadoController {
         return ResponseEntity.ok(certificadoService.listarPorUsuario(usuarioId));
     }
 
+    // Ruta pública — cualquiera con el código puede validar sin login
     @GetMapping("/validar/{codigo}")
     public ResponseEntity<CertificadoDTO> validar(@PathVariable String codigo) {
         return ResponseEntity.ok(certificadoService.validarPorCodigo(codigo));
@@ -56,6 +59,7 @@ public class CertificadoController {
                 .body(pdf);
     }
 
+    // Organizador genera certificados de todos los que hicieron check-in
     @PostMapping("/evento/{eventoId}/generar-masivo")
     public ResponseEntity<List<CertificadoDTO>> generarMasivo(
             @PathVariable Long eventoId,

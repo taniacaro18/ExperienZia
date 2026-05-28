@@ -6,6 +6,7 @@ import com.experienzia.entity.EstadoEvento;
 
 import lombok.Data;
 
+// Un conflicto de sala que meto en DisponibilidadSalonDTO cuando ya hay otro evento en esas fechas.
 @Data
 
 public class FranjaOcupacionSalonDTO {

@@ -6,46 +6,42 @@ import com.experienzia.dto.DashboardOrganizadorDTO;
 import com.experienzia.dto.EventoPopularDTO;
 import com.experienzia.dto.ReporteEventoAvanzadoDTO;
 import com.experienzia.dto.ReporteEventoDTO;
+import com.experienzia.dto.ReportePagosAdminDTO;
+import com.experienzia.dto.ReporteUsuariosAdminDTO;
 import com.experienzia.dto.ResumenDTO;
 
 import java.util.List;
 
-/**
- * Interfaz del servicio de reportes y estadísticas.
- * Agrupa consultas para dashboards, popularidad de eventos y métricas de asistencia.
- */
-/**
- * Interfaz del servicio ReporteService.
- * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
- */
+// Reportes y dashboards: saco números de la BD para pintar gráficas y tablas en el front
 public interface ReporteService {
 
-    /** Eventos ordenados por cantidad de inscritos (más populares primero). */
+    // Eventos ordenados por inscritos (más populares primero)
     List<EventoPopularDTO> obtenerEventosPopulares();
 
-    /** Cuenta cuántas personas asistieron realmente a un evento. */
+    // Cuántos asistieron de verdad a un evento (check-in)
     AsistenciaDTO obtenerAsistenciaPorEvento(Long eventoId);
 
-    /** Devuelve los ids de usuarios inscritos en un evento. */
+    // Ids de inscritos (notificaciones masivas u otros flujos)
     List<Long> obtenerUsuariosPorEvento(Long eventoId);
 
-    /** Totales globales: usuarios, eventos e inscripciones en el sistema. */
+    // Totales globales del sistema para el admin
     ResumenDTO obtenerResumenGeneral();
 
-    /**
-     * Reporte detallado de un evento para el organizador (aforo, % ocupación, lista de asistentes).
-     * HU-023.
-     */
+    // Reporte detallado de un evento para su organizador (aforo, lista, % ocupación)
     ReporteEventoDTO obtenerReporteDetalladoEvento(Long eventoId, Long organizadorId);
 
-    /**
-     * Reporte avanzado: curva de ingresos por hora, check-in QR vs manual, desempeño del staff.
-     */
+    // Reporte avanzado: ingresos por hora, QR vs manual, desempeño staff
     ReporteEventoAvanzadoDTO obtenerReporteAvanzadoEvento(Long eventoId, Long organizadorId);
 
-    /** Números resumidos para el panel principal del organizador. */
+    // Tarjetas del panel principal del organizador
     DashboardOrganizadorDTO obtenerDashboardOrganizador(Long organizadorId);
 
-    /** Números resumidos para el panel del administrador. */
+    // Tarjetas del panel del administrador
     DashboardAdminDTO obtenerDashboardAdmin();
+
+    // Reporte analítico de pagos (admin)
+    ReportePagosAdminDTO obtenerReportePagosAdmin();
+
+    // Reporte de usuarios y crecimiento (admin)
+    ReporteUsuariosAdminDTO obtenerReporteUsuariosAdmin();
 }

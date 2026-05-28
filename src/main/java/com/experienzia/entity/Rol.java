@@ -1,15 +1,9 @@
 package com.experienzia.entity;
 
-/**
- * Enum de roles de usuario. No es una tabla: JPA lo guarda como texto en {@link Usuario#rol}.
- */
+// No es tabla: lo persisto como STRING en usuarios. Define qué pantallas y endpoints puede usar cada quien.
 public enum Rol {
-    /** Persona que se inscribe y asiste a eventos. */
-    ASISTENTE,
-    /** Crea y gestiona sus propios eventos. */
-    ORGANIZADOR,
-    /** Ayuda en puerta (check-in/out) en eventos de un organizador. */
-    STAFF,
-    /** Administrador de la plataforma (aprueba eventos, pagos, etc.). */
-    ADMIN
+    ASISTENTE,   // se inscribe y va a eventos
+    ORGANIZADOR, // crea y administra sus eventos
+    STAFF,       // ayuda en puerta en eventos de su organizador
+    ADMIN        // aprueba eventos, pagos, usuarios, etc.
 }

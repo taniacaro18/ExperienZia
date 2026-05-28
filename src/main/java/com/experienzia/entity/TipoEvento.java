@@ -1,11 +1,7 @@
 package com.experienzia.entity;
 
-/**
- * Enum de visibilidad o acceso del {@link Evento}.
- */
+// Público o privado en la columna tipo_evento del evento — afecta cómo lo muestro en el catálogo.
 public enum TipoEvento {
-    /** Visible para todos los asistentes según reglas de listado. */
-    PUBLICO,
-    /** Acceso restringido (invitación, código, etc.). */
-    PRIVADO
+    PUBLICO,  // cualquiera puede verlo e inscribirse según reglas
+    PRIVADO   // acceso más restringido
 }

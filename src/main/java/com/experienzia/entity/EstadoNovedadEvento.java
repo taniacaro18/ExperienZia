@@ -1,13 +1,8 @@
 package com.experienzia.entity;
 
-/**
- * Enum: si una solicitud en {@link EventoNovedad} ya fue resuelta por el administrador.
- */
+// Si la solicitud en evento_novedades ya la resolvió el admin o sigue en cola.
 public enum EstadoNovedadEvento {
-    /** El admin aún no decidió. */
     PENDIENTE,
-    /** Se aplicó el cambio solicitado. */
     APROBADO,
-    /** No se aplicó el cambio. */
     RECHAZADO
 }

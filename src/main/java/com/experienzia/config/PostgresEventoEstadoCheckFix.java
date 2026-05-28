@@ -9,7 +9,7 @@ import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 
-
+// Al arrancar parcheo Postgres si el CHECK de estado del evento quedó viejo respecto al enum
 @Component 
 @Order(0) 
 public class PostgresEventoEstadoCheckFix implements ApplicationRunner {
@@ -26,16 +26,17 @@ public class PostgresEventoEstadoCheckFix implements ApplicationRunner {
 
 	@Override
 	public void run(ApplicationArguments args) {
-
+		// Se puede apagar con experienzia.db.fix-eventos-estado-check=false
 		if (!Boolean.parseBoolean(environment.getProperty("experienzia.db.fix-eventos-estado-check", "true"))) {
 			return;
 		}
 		String url = environment.getProperty("spring.datasource.url", "");
-
+		// En H2 de tests no corro esto
 		if (!url.contains("jdbc:postgresql")) {
 			return;
 		}
 		try {
+			// Estados nuevos (PENDIENTE_REVISION, suplemento...) que Hibernate usa pero el CHECK viejo no tenía
 			jdbcTemplate.execute("ALTER TABLE eventos DROP CONSTRAINT IF EXISTS eventos_estado_check");
 			jdbcTemplate.execute(
 					"ALTER TABLE eventos ADD CONSTRAINT eventos_estado_check CHECK (estado IN ("
@@ -59,7 +60,7 @@ public class PostgresEventoEstadoCheckFix implements ApplicationRunner {
 		alinearForeignKeysEventoNovedades();
 	}
 
-
+	// Tabla de novedades del evento: FK con CASCADE si borran el evento
 	private void alinearForeignKeysEventoNovedades() {
 		try {
 			Integer existe = jdbcTemplate.queryForObject(

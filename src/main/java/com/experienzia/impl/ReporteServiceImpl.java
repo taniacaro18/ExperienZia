@@ -8,13 +8,18 @@ import com.experienzia.dto.DashboardOrganizadorDTO;
 import com.experienzia.dto.DesempenoStaffDTO;
 import com.experienzia.dto.EventoPopularDTO;
 import com.experienzia.dto.PuntoSerieDTO;
+import com.experienzia.dto.PagoReporteLineaDTO;
 import com.experienzia.dto.ReporteEventoAvanzadoDTO;
 import com.experienzia.dto.ReporteEventoDTO;
+import com.experienzia.dto.ReportePagosAdminDTO;
+import com.experienzia.dto.ReporteUsuariosAdminDTO;
 import com.experienzia.dto.ResumenDTO;
-import com.experienzia.entity.Auditoria;
 import com.experienzia.entity.Estado;
+import com.experienzia.entity.EstadoEvento;
 import com.experienzia.entity.EstadoInscripcion;
+import com.experienzia.entity.EstadoPago;
 import com.experienzia.entity.Evento;
+import com.experienzia.entity.Pago;
 import com.experienzia.entity.FuncionStaff;
 import com.experienzia.entity.Inscripcion;
 import com.experienzia.entity.Rol;
@@ -24,6 +29,7 @@ import com.experienzia.exceptions.CustomException;
 import com.experienzia.repository.AuditoriaRepository;
 import com.experienzia.repository.EventoRepository;
 import com.experienzia.repository.InscripcionRepository;
+import com.experienzia.repository.PagoRepository;
 import com.experienzia.repository.StaffEventoAsignacionRepository;
 import com.experienzia.repository.UsuarioRepository;
 import com.experienzia.service.ReporteService;
@@ -34,47 +40,49 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
-/**
- * Clase de implementación del módulo Reporte.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
+// Reportes y dashboards: trato de no hacer findAll de todo porque se muere la BD con muchos datos.
 public class ReporteServiceImpl implements ReporteService {
 
+    private static final String ENTIDAD_INSCRIPCION = "Inscripcion";
+
+    // Acciones de auditoría que uso para contar check-in QR vs manual en el reporte avanzado.
     private static final List<String> ACCIONES_CHECK_IN_QR = List.of("CHECK_IN_QR");
     private static final List<String> ACCIONES_CHECK_IN_MANUAL = List.of("CHECK_IN");
+    private static final List<String> ACCIONES_CHECK_OUT = List.of("CHECK_OUT", "CHECK_OUT_QR");
 
-    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
-    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
-    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
-    /** Dato del campo staff evento repository */
     private final StaffEventoAsignacionRepository staffEventoRepository;
-    /** Dato del campo auditoria repository */
     private final AuditoriaRepository auditoriaRepository;
+    private final PagoRepository pagoRepository;
 
-    public ReporteServiceImpl(InscripcionRepository inscripcionRepository,
-                              EventoRepository eventoRepository,
-                              UsuarioRepository usuarioRepository,
-                              StaffEventoAsignacionRepository staffEventoRepository,
-                              AuditoriaRepository auditoriaRepository) {
+    public ReporteServiceImpl(
+            InscripcionRepository inscripcionRepository,
+            EventoRepository eventoRepository,
+            UsuarioRepository usuarioRepository,
+            StaffEventoAsignacionRepository staffEventoRepository,
+            AuditoriaRepository auditoriaRepository,
+            PagoRepository pagoRepository) {
         this.inscripcionRepository = inscripcionRepository;
         this.eventoRepository = eventoRepository;
         this.usuarioRepository = usuarioRepository;
         this.staffEventoRepository = staffEventoRepository;
         this.auditoriaRepository = auditoriaRepository;
+        this.pagoRepository = pagoRepository;
     }
 
     @Override
-    /** Ejecuta `obtenerEventosPopulares` (lógica del servicio). */
     public List<EventoPopularDTO> obtenerEventosPopulares() {
+        // Query agrupada en repo; acá solo le pongo el nombre del evento para el ranking.
         return inscripcionRepository.findEventosPopulares().stream().map(obj -> {
             Long eventoId = (Long) obj[0];
             Long totalInscritos = (Long) obj[1];
@@ -86,20 +94,17 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
-    /** Ejecuta `obtenerAsistenciaPorEvento` (lógica del servicio). */
     public AsistenciaDTO obtenerAsistenciaPorEvento(Long eventoId) {
         long totalAsistieron = inscripcionRepository.countByEventoIdAndEstado(eventoId, EstadoInscripcion.ASISTIO);
         return new AsistenciaDTO(eventoId, totalAsistieron);
     }
 
     @Override
-    /** Ejecuta `obtenerUsuariosPorEvento` (lógica del servicio). */
     public List<Long> obtenerUsuariosPorEvento(Long eventoId) {
         return inscripcionRepository.findUsuarioIdsByEventoId(eventoId);
     }
 
     @Override
-    /** Ejecuta `obtenerResumenGeneral` (lógica del servicio). */
     public ResumenDTO obtenerResumenGeneral() {
         return new ResumenDTO(
                 usuarioRepository.count(),
@@ -108,23 +113,41 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
-    /** Ejecuta `obtenerReporteDetalladoEvento` (lógica del servicio). */
     public ReporteEventoDTO obtenerReporteDetalladoEvento(Long eventoId, Long organizadorId) {
         Evento evento = buscarEventoYValidarOrganizador(eventoId, organizadorId);
 
+        // Recorro inscripciones y armo lista de asistentes; cargo usuarios en batch para no hacer N+1.
         List<Inscripcion> inscripciones = inscripcionRepository.findByEventoId(eventoId);
         long inscritos = 0L;
         long asistencias = 0L;
         long enSala = 0L;
         List<AsistenteEventoDTO> asistentes = new ArrayList<>();
+
+        List<Long> usuarioIds = inscripciones.stream()
+                .filter(ins -> ins.getEstado() != EstadoInscripcion.CANCELADO)
+                .map(Inscripcion::getUsuarioId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, Usuario> usuariosPorId = new HashMap<>();
+        if (!usuarioIds.isEmpty()) {
+            usuarioRepository.findAllById(usuarioIds)
+                    .forEach(u -> usuariosPorId.put(u.getId(), u));
+        }
+
         for (Inscripcion ins : inscripciones) {
-            if (ins.getEstado() == EstadoInscripcion.CANCELADO) continue;
+            if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
+                continue;
+            }
             inscritos++;
             if (ins.getEstado() == EstadoInscripcion.ASISTIO) {
                 asistencias++;
-                if (ins.getFechaCheckOut() == null) enSala++;
+                // Sin check-out = todavía dentro del salón (aforo en vivo del reporte).
+                if (ins.getFechaCheckOut() == null) {
+                    enSala++;
+                }
             }
-            Usuario u = usuarioRepository.findById(ins.getUsuarioId()).orElse(null);
+            Usuario u = usuariosPorId.get(ins.getUsuarioId());
             if (u != null) {
                 AsistenteEventoDTO dto = new AsistenteEventoDTO();
                 dto.setInscripcionId(ins.getId());
@@ -171,19 +194,27 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
-    /** Ejecuta `obtenerReporteAvanzadoEvento` (lógica del servicio). */
+    // Curva por hora, QR vs manual y desempeño del staff — me apoyo en auditoría.
     public ReporteEventoAvanzadoDTO obtenerReporteAvanzadoEvento(Long eventoId, Long organizadorId) {
         Evento evento = buscarEventoYValidarOrganizador(eventoId, organizadorId);
 
         List<Inscripcion> inscripciones = inscripcionRepository.findByEventoId(eventoId);
         long inscritos = 0L;
         long asistieron = 0L;
+        // Array [ingresos, salidas] por hora del día — para la curva que muestra el front.
+        // Array [ingresos, salidas] por hora del día — el front arma la gráfica.
         Map<Integer, long[]> porHora = new LinkedHashMap<>();
-        for (int h = 0; h < 24; h++) porHora.put(h, new long[]{0L, 0L});
+        for (int h = 0; h < 24; h++) {
+            porHora.put(h, new long[]{0L, 0L});
+        }
 
         long checkOuts = 0L;
+        List<Long> inscripcionIds = new ArrayList<>();
         for (Inscripcion ins : inscripciones) {
-            if (ins.getEstado() == EstadoInscripcion.CANCELADO) continue;
+            inscripcionIds.add(ins.getId());
+            if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
+                continue;
+            }
             inscritos++;
             if (ins.getFechaCheckIn() != null) {
                 asistieron++;
@@ -197,44 +228,33 @@ public class ReporteServiceImpl implements ReporteService {
             }
         }
 
-        // Desglose QR vs manual desde la auditoría (acción del registro de check-in).
-        // Filtramos por cada inscripción del evento.
-        long checkInsQR = inscripciones.stream()
-                .map(Inscripcion::getId)
-                .mapToLong(insId -> auditoriaRepository
-                        .findByEntidadAndEntidadIdAndAccionInOrderByFechaDesc("Inscripcion", insId, ACCIONES_CHECK_IN_QR)
-                        .size())
-                .sum();
-        long checkInsManuales = inscripciones.stream()
-                .map(Inscripcion::getId)
-                .mapToLong(insId -> auditoriaRepository
-                        .findByEntidadAndEntidadIdAndAccionInOrderByFechaDesc("Inscripcion", insId, ACCIONES_CHECK_IN_MANUAL)
-                        .size())
-                .sum();
+        // Cuántos check-in fueron por QR vs manual lo saco de auditoría, no solo de la inscripción.
+        long checkInsQR = contarAuditoriasInscripciones(inscripcionIds, ACCIONES_CHECK_IN_QR);
+        long checkInsManuales = contarAuditoriasInscripciones(inscripcionIds, ACCIONES_CHECK_IN_MANUAL);
 
-        // Desempeño por staff (a partir de las asignaciones del evento + auditorías filtradas por staff).
         List<StaffEventoAsignacion> asignaciones = staffEventoRepository.findByEventoId(eventoId);
+        List<Long> staffIds = asignaciones.stream()
+                .map(StaffEventoAsignacion::getStaffUsuarioId)
+                .distinct()
+                .collect(Collectors.toList());
+        Map<Long, Usuario> staffPorId = new HashMap<>();
+        if (!staffIds.isEmpty()) {
+            usuarioRepository.findAllById(staffIds)
+                    .forEach(u -> staffPorId.put(u.getId(), u));
+        }
+
         List<DesempenoStaffDTO> desempeno = new ArrayList<>();
         for (StaffEventoAsignacion a : asignaciones) {
-            Usuario staff = usuarioRepository.findById(a.getStaffUsuarioId()).orElse(null);
+            Usuario staff = staffPorId.get(a.getStaffUsuarioId());
             DesempenoStaffDTO d = new DesempenoStaffDTO();
             d.setStaffUsuarioId(a.getStaffUsuarioId());
             d.setNombre(staff != null ? staff.getNombre() : null);
             d.setFuncion(a.getFuncion() == null ? FuncionStaff.GENERAL.name() : a.getFuncion().name());
 
-            List<Auditoria> registros = auditoriaRepository
-                    .findByUsuarioIdOrderByFechaDesc(a.getStaffUsuarioId());
-            long sIn = 0, sInQr = 0, sInMan = 0, sOut = 0;
-            for (Auditoria au : registros) {
-                if (!"Inscripcion".equals(au.getEntidad())) continue;
-                Inscripcion ins = inscripcionRepository.findById(au.getEntidadId()).orElse(null);
-                if (ins == null || !ins.getEventoId().equals(eventoId)) continue;
-                String accion = au.getAccion();
-                if ("CHECK_IN".equals(accion)) { sIn++; sInMan++; }
-                else if ("CHECK_IN_QR".equals(accion)) { sIn++; sInQr++; }
-                else if ("CHECK_OUT".equals(accion) || "CHECK_OUT_QR".equals(accion)) { sOut++; }
-            }
-            d.setCheckInsRegistrados(sIn);
+            long sInQr = contarAuditoriasStaffEnEvento(a.getStaffUsuarioId(), inscripcionIds, ACCIONES_CHECK_IN_QR);
+            long sInMan = contarAuditoriasStaffEnEvento(a.getStaffUsuarioId(), inscripcionIds, ACCIONES_CHECK_IN_MANUAL);
+            long sOut = contarAuditoriasStaffEnEvento(a.getStaffUsuarioId(), inscripcionIds, ACCIONES_CHECK_OUT);
+            d.setCheckInsRegistrados(sInQr + sInMan);
             d.setCheckOutsRegistrados(sOut);
             d.setCheckInsPorQR(sInQr);
             d.setCheckInsManuales(sInMan);
@@ -276,8 +296,9 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
-    /** Ejecuta `obtenerDashboardOrganizador` (lógica del servicio). */
+    // KPIs del organizador + series de últimos 12 meses.
     public DashboardOrganizadorDTO obtenerDashboardOrganizador(Long organizadorId) {
+        // Panel del organizador: conteos por estado + series de últimos 12 meses para gráficas.
         if (organizadorId == null) {
             throw new CustomException("organizadorId es obligatorio.", HttpStatus.BAD_REQUEST);
         }
@@ -287,51 +308,35 @@ public class ReporteServiceImpl implements ReporteService {
             throw new CustomException("El usuario no es ORGANIZADOR.", HttpStatus.FORBIDDEN);
         }
 
-        List<Evento> eventos = eventoRepository.findByOrganizadorId(organizadorId);
-        long activos = 0, pendientes = 0, cancelados = 0, cuposActivos = 0;
-        for (Evento e : eventos) {
-            switch (e.getEstado()) {
-                case ACTIVO -> {
-                    activos++;
-                    cuposActivos += e.getAforoActual();
-                }
-                case PENDIENTE -> pendientes++;
-                case CANCELADO -> cancelados++;
-                default -> { /* no-op */ }
-            }
-        }
+        long activos = eventoRepository.countByOrganizadorIdAndEstado(organizadorId, EstadoEvento.ACTIVO);
+        long pendientes = eventoRepository.countByOrganizadorIdAndEstado(organizadorId, EstadoEvento.PENDIENTE);
+        long cancelados = eventoRepository.countByOrganizadorIdAndEstado(organizadorId, EstadoEvento.CANCELADO);
+        long eventosTotales = eventoRepository.countByOrganizadorId(organizadorId);
+        long cuposActivos = eventoRepository.sumAforoActualEventosActivosByOrganizadorId(organizadorId);
 
-        long totalInscritos = 0L;
-        long asistencias30 = 0L;
-        LocalDateTime hace30 = LocalDateTime.now().minusDays(30);
+        LocalDateTime desdeSerie = inicioVentanaSerieMensual();
         Map<YearMonth, Long> inscripcionesPorMes = nuevaSerieMensualVacia();
+        aplicarConteosMensuales(
+                inscripcionesPorMes,
+                inscripcionRepository.countInscripcionesActivasAgrupadasPorMesByOrganizadorId(organizadorId, desdeSerie));
+
         Map<YearMonth, Long> eventosPorMes = nuevaSerieMensualVacia();
+        aplicarConteosMensuales(
+                eventosPorMes,
+                eventoRepository.countEventosAgrupadosPorMesByOrganizadorId(organizadorId, desdeSerie));
 
-        for (Evento e : eventos) {
-            // mes de creación del evento ≈ mes de la fecha del evento (proxy).
-            YearMonth ymEvt = YearMonth.from(e.getFecha());
-            eventosPorMes.computeIfPresent(ymEvt, (k, v) -> v + 1);
-
-            List<Inscripcion> ins = inscripcionRepository.findByEventoId(e.getId());
-            for (Inscripcion i : ins) {
-                if (i.getEstado() == EstadoInscripcion.CANCELADO) continue;
-                totalInscritos++;
-                YearMonth ym = YearMonth.from(i.getFechaInscripcion());
-                inscripcionesPorMes.computeIfPresent(ym, (k, v) -> v + 1);
-                if (i.getFechaCheckIn() != null && i.getFechaCheckIn().isAfter(hace30)) {
-                    asistencias30++;
-                }
-            }
-        }
+        long totalInscritos = inscripcionRepository.countInscripcionesActivasByOrganizadorId(organizadorId);
+        long asistencias30 = inscripcionRepository.countAsistenciasConCheckInDesdeByOrganizadorId(
+                organizadorId, LocalDateTime.now().minusDays(30));
 
         DashboardOrganizadorDTO dto = new DashboardOrganizadorDTO();
         dto.setOrganizadorId(organizadorId);
         dto.setEventosActivos(activos);
         dto.setEventosPendientes(pendientes);
         dto.setEventosCancelados(cancelados);
-        dto.setEventosTotales(eventos.size());
+        dto.setEventosTotales(eventosTotales);
         dto.setTotalInscritos(totalInscritos);
-        dto.setAforoMaximoPorEvento(600);
+        dto.setAforoMaximoPorEvento(600); // tope de negocio fijo para la UI del dashboard
         dto.setCuposOcupadosEventosActivos(cuposActivos);
         dto.setAsistenciasUltimos30Dias(asistencias30);
         dto.setSerieMensualEventos(toSerie(eventosPorMes));
@@ -340,45 +345,33 @@ public class ReporteServiceImpl implements ReporteService {
     }
 
     @Override
-    /** Ejecuta `obtenerDashboardAdmin` (lógica del servicio). */
     public DashboardAdminDTO obtenerDashboardAdmin() {
-        List<Evento> eventos = eventoRepository.findAll();
-        long activos = 0, pendientes = 0, cancelados = 0;
+        long activos = eventoRepository.countByEstado(EstadoEvento.ACTIVO);
+        long pendientes = eventoRepository.countByEstado(EstadoEvento.PENDIENTE);
+        long cancelados = eventoRepository.countByEstado(EstadoEvento.CANCELADO);
+        long eventosTotales = eventoRepository.count();
+
+        LocalDateTime desdeSerie = inicioVentanaSerieMensual();
         Map<YearMonth, Long> eventosPorMes = nuevaSerieMensualVacia();
-        for (Evento e : eventos) {
-            switch (e.getEstado()) {
-                case ACTIVO -> activos++;
-                case PENDIENTE -> pendientes++;
-                case CANCELADO -> cancelados++;
-                default -> { /* no-op */ }
-            }
-            YearMonth ym = YearMonth.from(e.getFecha());
-            eventosPorMes.computeIfPresent(ym, (k, v) -> v + 1);
-        }
+        aplicarConteosMensuales(eventosPorMes, eventoRepository.countEventosAgrupadosPorMesDesde(desdeSerie));
 
-        List<Usuario> usuarios = usuarioRepository.findAll();
-        long usuariosActivos = 0, usuariosPendientes = 0, organizadoresActivos = 0;
-        long asistentes = 0, staff = 0;
+        long usuariosActivos = usuarioRepository.countUsuariosByEstado(Estado.ACTIVO);
+        long usuariosPendientes = usuarioRepository.countUsuariosByEstado(Estado.PENDIENTE);
+        long organizadoresActivos = usuarioRepository.countUsuariosByRolAndEstado(Rol.ORGANIZADOR, Estado.ACTIVO);
+        long asistentes = usuarioRepository.countUsuariosByRol(Rol.ASISTENTE);
+        long staff = usuarioRepository.countUsuariosByRol(Rol.STAFF);
+        long usuariosTotales = usuarioRepository.count();
+
         Map<YearMonth, Long> usuariosPorMes = nuevaSerieMensualVacia();
-        for (Usuario u : usuarios) {
-            if (u.getEstado() == Estado.ACTIVO) usuariosActivos++;
-            else if (u.getEstado() == Estado.PENDIENTE) usuariosPendientes++;
-
-            if (u.getRol() == Rol.ORGANIZADOR && u.getEstado() == Estado.ACTIVO) organizadoresActivos++;
-            if (u.getRol() == Rol.ASISTENTE) asistentes++;
-            if (u.getRol() == Rol.STAFF) staff++;
-            // No tenemos createdAt → como proxy, usamos el id como orden temporal: cae en este mes.
-            // Hasta no tener fechaCreacion en Usuario, dejamos los conteos en el mes actual.
-        }
-        // Sin fecha de creación de usuario, ponemos todos en el mes actual como proxy.
-        usuariosPorMes.computeIfPresent(YearMonth.now(), (k, v) -> v + usuarios.size());
+        // No tenemos fecha de alta de usuario en BD; meto el total en el mes actual como parche para la gráfica.
+        usuariosPorMes.computeIfPresent(YearMonth.now(), (k, v) -> v + usuariosTotales);
 
         DashboardAdminDTO dto = new DashboardAdminDTO();
         dto.setEventosActivos(activos);
         dto.setEventosPendientes(pendientes);
         dto.setEventosCancelados(cancelados);
-        dto.setEventosTotales(eventos.size());
-        dto.setUsuariosTotales(usuarios.size());
+        dto.setEventosTotales(eventosTotales);
+        dto.setUsuariosTotales(usuariosTotales);
         dto.setUsuariosActivos(usuariosActivos);
         dto.setUsuariosPendientes(usuariosPendientes);
         dto.setOrganizadoresActivos(organizadoresActivos);
@@ -388,6 +381,83 @@ public class ReporteServiceImpl implements ReporteService {
         dto.setSerieMensualEventos(toSerie(eventosPorMes));
         dto.setSerieMensualUsuarios(toSerie(usuariosPorMes));
         return dto;
+    }
+
+    @Override
+    public ReportePagosAdminDTO obtenerReportePagosAdmin() {
+        double totalAprobado = pagoRepository.sumMontoByEstado(EstadoPago.APROBADO);
+        double complementos = pagoRepository.sumMontoComplementosByEstado(EstadoPago.APROBADO);
+        double pendiente = pagoRepository.sumMontoByEstado(EstadoPago.PENDIENTE);
+
+        List<PagoReporteLineaDTO> lineas = new ArrayList<>();
+        for (Pago p : pagoRepository.findAllByOrderByFechaDesc()) {
+            PagoReporteLineaDTO linea = new PagoReporteLineaDTO();
+            linea.setPagoId(p.getId());
+            linea.setEventoId(p.getEventoId());
+            linea.setOrganizadorId(p.getOrganizadorId());
+            linea.setMonto(p.getMonto());
+            linea.setEstado(p.getEstado());
+            linea.setFecha(p.getFecha());
+            linea.setComplementoHoras(p.getSaldoAprobadoPrevio() != null);
+            eventoRepository.findById(p.getEventoId()).ifPresent(ev -> linea.setNombreEvento(ev.getNombre()));
+            usuarioRepository.findById(p.getOrganizadorId()).ifPresent(u -> linea.setNombreOrganizador(u.getNombre()));
+            lineas.add(linea);
+        }
+
+        return new ReportePagosAdminDTO(
+                redondear(totalAprobado),
+                redondear(complementos),
+                redondear(pendiente),
+                pagoRepository.countByEstado(EstadoPago.APROBADO),
+                pagoRepository.countByEstado(EstadoPago.PENDIENTE),
+                pagoRepository.countByEstado(EstadoPago.RECHAZADO),
+                lineas);
+    }
+
+    @Override
+    public ReporteUsuariosAdminDTO obtenerReporteUsuariosAdmin() {
+        DashboardAdminDTO dash = obtenerDashboardAdmin();
+        ReporteUsuariosAdminDTO dto = new ReporteUsuariosAdminDTO();
+        dto.setUsuariosTotales(dash.getUsuariosTotales());
+        dto.setUsuariosActivos(dash.getUsuariosActivos());
+        dto.setUsuariosPendientes(dash.getUsuariosPendientes());
+        dto.setOrganizadoresActivos(dash.getOrganizadoresActivos());
+        dto.setAsistentesRegistrados(dash.getAsistentesTotales());
+        dto.setStaffActivo(usuarioRepository.countUsuariosByRolAndEstado(Rol.STAFF, Estado.ACTIVO));
+        dto.setCrecimientoMensualUsuarios(dash.getSerieMensualUsuarios());
+        dto.setCrecimientoMensualEventos(dash.getSerieMensualEventos());
+        return dto;
+    }
+
+    private long contarAuditoriasInscripciones(List<Long> inscripcionIds, List<String> acciones) {
+        if (inscripcionIds.isEmpty()) {
+            return 0L;
+        }
+        return auditoriaRepository.countByEntidadAndEntidadIdInAndAccionIn(
+                ENTIDAD_INSCRIPCION, inscripcionIds, acciones);
+    }
+
+    private long contarAuditoriasStaffEnEvento(Long staffUsuarioId, List<Long> inscripcionIds, List<String> acciones) {
+        if (inscripcionIds.isEmpty()) {
+            return 0L;
+        }
+        return auditoriaRepository.countByUsuarioIdAndEntidadAndEntidadIdInAndAccionIn(
+                staffUsuarioId, ENTIDAD_INSCRIPCION, inscripcionIds, acciones);
+    }
+
+    private static LocalDateTime inicioVentanaSerieMensual() {
+        YearMonth inicio = YearMonth.now().minusMonths(11);
+        return inicio.atDay(1).atStartOfDay();
+    }
+
+    private static void aplicarConteosMensuales(Map<YearMonth, Long> serie, List<Object[]> filas) {
+        for (Object[] row : filas) {
+            int year = ((Number) row[0]).intValue();
+            int month = ((Number) row[1]).intValue();
+            long count = ((Number) row[2]).longValue();
+            YearMonth ym = YearMonth.of(year, month);
+            serie.computeIfPresent(ym, (k, v) -> v + count);
+        }
     }
 
     private Evento buscarEventoYValidarOrganizador(Long eventoId, Long organizadorId) {
@@ -400,9 +470,7 @@ public class ReporteServiceImpl implements ReporteService {
         return evento;
     }
 
-    /**
-     * Genera un mapa con los últimos 12 meses (incluyendo el actual) inicializados en 0.
-     */
+    // Últimos 12 meses en cero para que el front siempre tenga 12 puntos aunque no haya datos.
     private static Map<YearMonth, Long> nuevaSerieMensualVacia() {
         Map<YearMonth, Long> map = new LinkedHashMap<>();
         YearMonth ahora = YearMonth.now();

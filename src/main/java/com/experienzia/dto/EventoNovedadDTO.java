@@ -9,6 +9,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+// Expongo una fila de evento_novedades al admin/organizador — historial de cambios pendientes o resueltos.
 @Data
 @NoArgsConstructor
 @AllArgsConstructor

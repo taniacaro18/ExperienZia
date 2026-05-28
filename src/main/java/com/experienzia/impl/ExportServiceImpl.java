@@ -3,6 +3,9 @@ package com.experienzia.impl;
 import com.experienzia.dto.AsistenteEventoDTO;
 import com.experienzia.dto.CertificadoDTO;
 import com.experienzia.dto.EventoDTO;
+import com.experienzia.dto.PagoReporteLineaDTO;
+import com.experienzia.dto.ReportePagosAdminDTO;
+import com.experienzia.dto.ReporteUsuariosAdminDTO;
 import com.experienzia.exceptions.CustomException;
 import com.experienzia.service.export.ExportService;
 import com.lowagie.text.Chunk;
@@ -43,30 +46,20 @@ import java.time.format.TextStyle;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * Implementación de exportadores en backend.
- * <p>
- * Usa Apache POI para Excel (.xlsx) y OpenPDF (fork libre de iText 2.x) para PDF.
- * Los archivos quedan en memoria como {@code byte[]} y se entregan como descarga
- * desde los endpoints REST correspondientes.
- */
+// Genero Excel (POI) y PDF (OpenPDF) en memoria; el controller los manda como descarga al front.
 @Service
-/**
- * Clase de implementación del módulo Export.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
 public class ExportServiceImpl implements ExportService {
 
     private static final DateTimeFormatter FECHA_FMT =
             DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final Color BRAND = new Color(124, 99, 196);
     private static final Color BRAND_LIGHT = new Color(248, 244, 255);
-    /** Fondo del certificado de asistencia (plantilla oficial). */
+    // Lila del certificado — intenté copiar la plantilla que nos pasaron de diseño.
     private static final Color CERT_BG = new Color(167, 139, 250);
     private static final String CERT_URL_VALIDACION = "experienzia.com/validar";
 
     @Override
-    /** Ejecuta `resumenAsistentesExcel` (lógica del servicio). */
+    // Lista de asistentes del evento para que el organizador la baje en Excel.
     public byte[] resumenAsistentesExcel(EventoDTO evento, List<AsistenteEventoDTO> asistentes) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet hoja = wb.createSheet("Asistentes");
@@ -94,30 +87,29 @@ public class ExportServiceImpl implements ExportService {
 
             wb.write(out);
             return out.toByteArray();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CustomException("No se pudo generar el Excel: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    /** Ejecuta `resumenAsistentesPdf` (lógica del servicio). */
+    // Misma data que el Excel pero en tabla PDF horizontal para imprimir en puerta.
     public byte[] resumenAsistentesPdf(EventoDTO evento, List<AsistenteEventoDTO> asistentes) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 36, 36, 48, 36);
-            PdfWriter.getInstance(doc, out);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
             doc.open();
-
-            Font tituloF = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BRAND);
-            Font subF = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.DARK_GRAY);
-
-            Paragraph titulo = new Paragraph("Asistentes · " + safe(evento == null ? "" : evento.getNombre()), tituloF);
-            doc.add(titulo);
-            if (evento != null && evento.getFecha() != null) {
-                doc.add(new Paragraph("Fecha del evento: " + evento.getFecha().format(FECHA_FMT), subF));
-            }
-            doc.add(new Paragraph("Total: " + asistentes.size() + " asistente(s)", subF));
-            doc.add(new Paragraph(" "));
+            PdfInformeBranding.escribirCabecera(
+                    doc,
+                    writer,
+                    "Asistentes · " + safe(evento == null ? "" : evento.getNombre()),
+                    evento != null && evento.getFecha() != null
+                            ? "Evento: " + evento.getFecha().format(FECHA_FMT)
+                            : "Listado para control en puerta");
+            PdfInformeBranding.agregarTarjetasKpi(doc, new String[][]{
+                    {"Asistentes listados", String.valueOf(asistentes.size())}
+            });
 
             PdfPTable tabla = new PdfPTable(new float[]{2.5f, 3.5f, 2f, 1.2f, 2f, 1.5f, 2f, 2f, 2f});
             tabla.setWidthPercentage(100);
@@ -142,14 +134,14 @@ public class ExportServiceImpl implements ExportService {
             doc.add(tabla);
             doc.close();
             return out.toByteArray();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CustomException("No se pudo generar el PDF: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    /** Ejecuta `eventosExcel` (lógica del servicio). */
+    // Export masivo de eventos (admin/organizador según quién llame el endpoint).
     public byte[] eventosExcel(List<EventoDTO> eventos) {
         try (Workbook wb = new XSSFWorkbook(); ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Sheet hoja = wb.createSheet("Eventos");
@@ -180,26 +172,24 @@ public class ExportServiceImpl implements ExportService {
 
             wb.write(out);
             return out.toByteArray();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CustomException("No se pudo generar el Excel: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    /** Ejecuta `eventosPdf` (lógica del servicio). */
+    // PDF resumido de eventos (menos columnas que el Excel pero sirve para imprimir)
     public byte[] eventosPdf(List<EventoDTO> eventos) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 36, 36, 48, 36);
-            PdfWriter.getInstance(doc, out);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
             doc.open();
-
-            Font tituloF = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, BRAND);
-            Font subF = FontFactory.getFont(FontFactory.HELVETICA, 10, Color.DARK_GRAY);
-
-            doc.add(new Paragraph("Listado de eventos · ExperienZia", tituloF));
-            doc.add(new Paragraph("Total: " + eventos.size() + " evento(s)", subF));
-            doc.add(new Paragraph(" "));
+            PdfInformeBranding.escribirCabecera(
+                    doc, writer, "Listado de eventos", "Vista administrativa de la plataforma");
+            PdfInformeBranding.agregarTarjetasKpi(doc, new String[][]{
+                    {"Eventos en reporte", String.valueOf(eventos.size())}
+            });
 
             PdfPTable tabla = new PdfPTable(new float[]{0.7f, 3f, 1.5f, 1.5f, 1.5f, 2f, 2.5f, 1.2f, 1.5f});
             tabla.setWidthPercentage(100);
@@ -226,14 +216,14 @@ public class ExportServiceImpl implements ExportService {
             doc.add(tabla);
             doc.close();
             return out.toByteArray();
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CustomException("No se pudo generar el PDF: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
     @Override
-    /** Ejecuta `certificadoPdf` (lógica del servicio). */
+    // El PDF bonito de asistencia: fechas en español Colombia y serial EXP-año-código.
     public byte[] certificadoPdf(CertificadoDTO c) {
         try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
             Document doc = new Document(PageSize.A4.rotate(), 56, 56, 48, 56);
@@ -347,12 +337,13 @@ public class ExportServiceImpl implements ExportService {
         } catch (DocumentException e) {
             throw new CustomException("No se pudo generar el PDF del certificado: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
-        } catch (IOException e) {
+        } catch (Exception e) {
             throw new CustomException("No se pudo generar el PDF del certificado: " + e.getMessage(),
                     HttpStatus.INTERNAL_SERVER_ERROR);
         }
     }
 
+    // Fondo lila + marca de agua ExperienZia; si falla la estrella igual sale el certificado.
     private void pintarFondoCertificado(PdfWriter writer, Rectangle ps) {
         float w = ps.getWidth();
         float h = ps.getHeight();
@@ -384,6 +375,7 @@ public class ExportServiceImpl implements ExportService {
         }
     }
 
+    // Texto tipo "15 de mayo de 2026" — el mes en español me lo armo a mano con TextStyle.
     private static String fechaDiaMesAnioTitulado(java.time.LocalDateTime dt) {
         Locale es = Locale.forLanguageTag("es-CO");
         String mes = dt.getMonth().getDisplayName(TextStyle.FULL, es);
@@ -457,5 +449,109 @@ public class ExportServiceImpl implements ExportService {
 
     private static String safe(Object v) {
         return v == null ? "" : v.toString();
+    }
+
+    @Override
+    public byte[] reportePagosAdminPdf(ReportePagosAdminDTO reporte) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Document doc = new Document(PageSize.A4, 40, 40, 50, 40);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
+            doc.open();
+            PdfInformeBranding.escribirCabecera(
+                    doc, writer, "Reporte analítico de pagos", "Recaudación y estado de transacciones");
+            PdfInformeBranding.agregarTarjetasKpi(doc, new String[][]{
+                    {"Total recaudado (aprobado)", cop(reporte.getTotalRecaudadoAprobado())},
+                    {"Complementos por horas", cop(reporte.getTotalComplementosHorasAprobados())},
+                    {"Pendiente validación", cop(reporte.getTotalPendienteValidacion())},
+                    {"Transacciones aprobadas", String.valueOf(reporte.getCantidadAprobadas())}
+            });
+
+            Font section = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, BRAND);
+            doc.add(new Paragraph("Detalle de transacciones", section));
+            doc.add(new Paragraph(" "));
+
+            PdfPTable tabla = new PdfPTable(new float[]{0.8f, 2.2f, 1.8f, 1.2f, 1f, 1.2f});
+            tabla.setWidthPercentage(100);
+            for (String h : new String[]{"ID", "Evento", "Organizador", "Monto", "Estado", "Fecha"}) {
+                tabla.addCell(PdfInformeBranding.celdaEncabezadoTabla(h));
+            }
+            boolean alt = false;
+            if (reporte.getTransacciones() != null) {
+                for (PagoReporteLineaDTO t : reporte.getTransacciones()) {
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(String.valueOf(t.getPagoId()), alt));
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(safe(t.getNombreEvento()), alt));
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(safe(t.getNombreOrganizador()), alt));
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(cop(t.getMonto())
+                            + (t.isComplementoHoras() ? " *" : ""), alt));
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(
+                            t.getEstado() != null ? t.getEstado().name() : "", alt));
+                    tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(
+                            t.getFecha() != null ? t.getFecha().format(FECHA_FMT) : "", alt));
+                    alt = !alt;
+                }
+            }
+            doc.add(tabla);
+            doc.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new CustomException("No se pudo generar el PDF de pagos: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @Override
+    public byte[] reporteUsuariosAdminPdf(ReporteUsuariosAdminDTO reporte) {
+        try (ByteArrayOutputStream out = new ByteArrayOutputStream()) {
+            Document doc = new Document(PageSize.A4, 40, 40, 50, 40);
+            PdfWriter writer = PdfWriter.getInstance(doc, out);
+            doc.open();
+            PdfInformeBranding.escribirCabecera(
+                    doc, writer, "Reporte de usuarios", "Crecimiento y composición de la plataforma");
+            PdfInformeBranding.agregarTarjetasKpi(doc, new String[][]{
+                    {"Usuarios totales", String.valueOf(reporte.getUsuariosTotales())},
+                    {"Usuarios activos", String.valueOf(reporte.getUsuariosActivos())},
+                    {"Organizadores activos", String.valueOf(reporte.getOrganizadoresActivos())},
+                    {"Asistentes registrados", String.valueOf(reporte.getAsistentesRegistrados())},
+                    {"Staff activo", String.valueOf(reporte.getStaffActivo())},
+                    {"Pendientes de aprobación", String.valueOf(reporte.getUsuariosPendientes())}
+            });
+
+            Font section = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, BRAND);
+            doc.add(new Paragraph("Crecimiento mensual de eventos", section));
+            doc.add(new Paragraph(" "));
+            agregarTablaSerie(doc, reporte.getCrecimientoMensualEventos());
+
+            doc.add(new Paragraph(" "));
+            doc.add(new Paragraph("Indicador de usuarios (serie mensual)", section));
+            doc.add(new Paragraph(" "));
+            agregarTablaSerie(doc, reporte.getCrecimientoMensualUsuarios());
+
+            doc.close();
+            return out.toByteArray();
+        } catch (Exception e) {
+            throw new CustomException("No se pudo generar el PDF de usuarios: " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void agregarTablaSerie(Document doc, java.util.List<com.experienzia.dto.PuntoSerieDTO> serie)
+            throws Exception {
+        PdfPTable tabla = new PdfPTable(2);
+        tabla.setWidthPercentage(60);
+        tabla.addCell(PdfInformeBranding.celdaEncabezadoTabla("Mes"));
+        tabla.addCell(PdfInformeBranding.celdaEncabezadoTabla("Valor"));
+        boolean alt = false;
+        if (serie != null) {
+            for (var p : serie) {
+                tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(safe(p.getPeriodo()), alt));
+                tabla.addCell(PdfInformeBranding.celdaCuerpoTabla(String.valueOf(p.getValor()), alt));
+                alt = !alt;
+            }
+        }
+        doc.add(tabla);
+    }
+
+    private static String cop(double monto) {
+        return String.format(Locale.ROOT, "$%,.0f COP", monto);
     }
 }

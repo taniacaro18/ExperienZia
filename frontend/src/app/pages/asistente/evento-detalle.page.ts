@@ -2,7 +2,7 @@
 import { Component, computed, DestroyRef, inject, OnInit, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { CommonModule, DatePipe } from '@angular/common';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
 import { distinctUntilChanged, filter, map } from 'rxjs/operators';
 import { ButtonModule } from 'primeng/button';
 import { ProgressSpinnerModule } from 'primeng/progressspinner';
@@ -24,7 +24,6 @@ import { QrInscripcionUi } from '../../shared/qr-inscripcion/qr-inscripcion.ui';
   imports: [
     CommonModule,
     DatePipe,
-    RouterLink,
     ButtonModule,
     ProgressSpinnerModule,
     ConfirmDialogModule,

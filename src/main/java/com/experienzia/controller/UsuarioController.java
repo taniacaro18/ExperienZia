@@ -31,6 +31,7 @@ import com.experienzia.util.ClientIpResolver;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+// Yo expongo login, registro y CRUD de usuarios para el front
 @RestController
 @RequestMapping("/api/usuarios")
 public class UsuarioController {
@@ -46,11 +47,14 @@ public class UsuarioController {
         this.jwtService = jwtService;
     }
 
+    // Registro público (asistente u organizador según lo que mande el front)
+    // Registro público — asistente u organizador (organizador queda PENDIENTE hasta que admin apruebe)
     @PostMapping("/registro")
     public ResponseEntity<UsuarioDTO> registrar(@RequestBody UsuarioDTO dto) {
         return ResponseEntity.ok(usuarioService.registrar(dto));
     }
 
+    // Acá valido credenciales y devuelvo el token que el front guarda
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@RequestBody LoginDTO dto) {
         UsuarioDTO usuario = usuarioService.login(dto);
@@ -58,6 +62,8 @@ public class UsuarioController {
         return ResponseEntity.ok(new LoginResponseDTO(token, usuario));
     }
 
+    // Solo organizador crea staff ligado a su cuenta
+    // El organizador crea cuentas staff ligadas a su id
     @PostMapping("/staff")
     public ResponseEntity<UsuarioDTO> crearStaff(@RequestBody CrearStaffDTO dto) {
         return ResponseEntity.ok(usuarioService.crearStaff(dto));
@@ -68,6 +74,8 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.listarTodos());
     }
 
+    // Admin filtra usuarios por nombre, rol, estado...
+    // Filtros del panel admin (nombre, rol, estado...)
     @GetMapping("/buscar")
     public ResponseEntity<List<UsuarioDTO>> buscar(UsuarioSearchCriteria criteria) {
         return ResponseEntity.ok(usuarioService.buscarPorCriterios(criteria));
@@ -84,11 +92,14 @@ public class UsuarioController {
         return ResponseEntity.ok(usuarioService.actualizarPerfil(id, dto));
     }
 
+    // Olvidé mi clave — mando correo o mensaje según lo que tengamos en el service
+    // Olvidé mi clave: mando correo o mensaje según lo que tenga el service
     @PostMapping("/recuperar")
     public ResponseEntity<RecuperarPasswordResponseDTO> recuperar(@RequestBody RecuperarPasswordDTO dto) {
         return ResponseEntity.ok(usuarioService.recuperarPassword(dto));
     }
 
+    // Reenvío credenciales; freneo si quien llama es ADMIN (regla de negocio rara pero así quedó)
     @PostMapping("/{id}/reenviar-credenciales")
     public ResponseEntity<RecuperarPasswordResponseDTO> reenviarCredenciales(
             @PathVariable Long id,

@@ -15,6 +15,7 @@ import { DashboardAdmin, Evento, Usuario } from '../../core/models/domain.models
 import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 import { DonutComponent } from '../../shared/donut/donut.component';
 import { ExportService } from '../../core/export/export.service';
+import { ExportApi } from '../../core/api/export.api';
 
 @Component({
   selector: 'app-admin-reportes-page',
@@ -39,6 +40,7 @@ export class AdminReportesPage {
   private readonly usuarioApi = inject(UsuarioApi);
   private readonly messages = inject(MessageService);
   private readonly exportSvc = inject(ExportService);
+  private readonly exportApi = inject(ExportApi);
 
   readonly cargando = signal(true);
   readonly stats = signal<DashboardAdmin | null>(null);
@@ -51,6 +53,7 @@ export class AdminReportesPage {
   readonly cargandoAvanzado = signal(false);
   readonly reporteAvanzado = signal<ReporteEventoAvanzado | null>(null);
   readonly vistaPreviaVisible = signal(false);
+  readonly panelAbierto = signal<'admin' | 'resumen' | 'avanzado' | null>('admin');
 
   readonly opcionesOrganizadores = computed(() => [
     { label: 'Todos los organizadores', value: null as number | null },
@@ -176,6 +179,10 @@ export class AdminReportesPage {
     if (this.reporteAvanzado()) this.vistaPreviaVisible.set(true);
   }
 
+  togglePanel(panel: 'admin' | 'resumen' | 'avanzado') {
+    this.panelAbierto.set(this.panelAbierto() === panel ? null : panel);
+  }
+
   formatearHora(h: number): string {
     const hora = ((h % 24) + 24) % 24;
     return hora.toString().padStart(2, '0') + ':00';
@@ -230,6 +237,20 @@ export class AdminReportesPage {
       { header: 'Nombre', value: (p: EventoPopular) => p.nombre },
       { header: 'Inscritos', value: (p: EventoPopular) => p.totalInscritos }
     ], items);
+  }
+
+  descargarReportePagosPdf() {
+    this.exportApi.descargarReportePagosAdminPdf().subscribe({
+      next: () => this.messages.add({ severity: 'success', summary: 'PDF descargado', detail: 'Reporte de pagos listo.' }),
+      error: () => this.messages.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el reporte de pagos.' })
+    });
+  }
+
+  descargarReporteUsuariosPdf() {
+    this.exportApi.descargarReporteUsuariosAdminPdf().subscribe({
+      next: () => this.messages.add({ severity: 'success', summary: 'PDF descargado', detail: 'Reporte de usuarios listo.' }),
+      error: () => this.messages.add({ severity: 'error', summary: 'Error', detail: 'No se pudo descargar el reporte de usuarios.' })
+    });
   }
 
   exportarPopularesPdf() {

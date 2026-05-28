@@ -14,20 +14,17 @@ import com.experienzia.entity.Evento;
 import com.experienzia.entity.FuncionStaff;
 import com.experienzia.entity.Inscripcion;
 import com.experienzia.entity.Rol;
-import com.experienzia.entity.StaffEventoAsignacion;
 import com.experienzia.entity.TipoEvento;
 import com.experienzia.entity.TipoNotificacion;
 import com.experienzia.entity.Usuario;
 import com.experienzia.exceptions.CustomException;
 import com.experienzia.repository.EventoRepository;
 import com.experienzia.repository.InscripcionRepository;
-import com.experienzia.repository.StaffEventoAsignacionRepository;
 import com.experienzia.repository.UsuarioRepository;
 import com.experienzia.service.InscripcionService;
 import com.experienzia.service.NotificacionService;
-import com.experienzia.util.EventoVentanaUtil;
+import com.experienzia.service.StaffEventoService;
 import org.modelmapper.ModelMapper;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -35,89 +32,77 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional
-/**
- * Clase de implementación del módulo Inscripcion.
- * Aquí va la lógica de negocio (validar, guardar en BD, etc.).
- */
+// Inscripciones, QR check-in/out, carga masiva CSV y aforo en vivo — el corazón del lado asistente/staff.
 public class InscripcionServiceImpl implements InscripcionService {
 
     private static final String EMAIL_REGEX = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$";
 
-    private static final DateTimeFormatter FMT_VENTANA =
-            DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm", Locale.forLanguageTag("es-CO"));
-
-    @Value("${experienzia.eventos.zona-horaria:America/Bogota}")
-    /** Dato del campo zona horaria eventos */
-    private String zonaHorariaEventos;
-
-    /** Dato del campo inscripcion repository */
     private final InscripcionRepository inscripcionRepository;
-    /** Dato del campo evento repository */
     private final EventoRepository eventoRepository;
-    /** Dato del campo usuario repository */
     private final UsuarioRepository usuarioRepository;
-    /** Dato del campo staff evento repository */
-    private final StaffEventoAsignacionRepository staffEventoRepository;
-    /** Dato del campo notificacion service */
     private final NotificacionService notificacionService;
-    /** Dato del campo model mapper */
     private final ModelMapper modelMapper;
-    /** Dato del campo password encoder */
     private final PasswordEncoder passwordEncoder;
+    private final AsistenteCsvParser asistenteCsvParser;
+    private final InscripcionValidator inscripcionValidator;
+    private final StaffEventoService staffEventoService;
 
-    public InscripcionServiceImpl(InscripcionRepository inscripcionRepository,
-                                  EventoRepository eventoRepository,
-                                  UsuarioRepository usuarioRepository,
-                                  StaffEventoAsignacionRepository staffEventoRepository,
-                                  NotificacionService notificacionService,
-                                  ModelMapper modelMapper,
-                                  PasswordEncoder passwordEncoder) {
+    public InscripcionServiceImpl(
+            InscripcionRepository inscripcionRepository,
+            EventoRepository eventoRepository,
+            UsuarioRepository usuarioRepository,
+            NotificacionService notificacionService,
+            ModelMapper modelMapper,
+            PasswordEncoder passwordEncoder,
+            AsistenteCsvParser asistenteCsvParser,
+            InscripcionValidator inscripcionValidator,
+            StaffEventoService staffEventoService) {
         this.inscripcionRepository = inscripcionRepository;
         this.eventoRepository = eventoRepository;
         this.usuarioRepository = usuarioRepository;
-        this.staffEventoRepository = staffEventoRepository;
         this.notificacionService = notificacionService;
         this.modelMapper = modelMapper;
         this.passwordEncoder = passwordEncoder;
+        this.asistenteCsvParser = asistenteCsvParser;
+        this.inscripcionValidator = inscripcionValidator;
+        this.staffEventoService = staffEventoService;
     }
 
     @Override
-    /** Ejecuta `inscribir` (lógica del servicio). */
     public InscripcionDTO inscribir(Long usuarioId, Long eventoId) {
         return inscribirInterno(usuarioId, eventoId, true);
     }
 
+    // TX aparte: al aprobar pago inscribo al organizador sin tumbar la transacción del pago si falla el cupo.
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    /** Ejecuta `inscribirOrganizadorEnSuEvento` (lógica del servicio). */
     public InscripcionDTO inscribirOrganizadorEnSuEvento(Long eventoId) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("El evento no existe.", HttpStatus.NOT_FOUND));
-        if (evento.getOrganizadorId() == null) return null;
+        if (evento.getOrganizadorId() == null) {
+            return null;
+        }
         Long organizadorId = evento.getOrganizadorId();
 
-        // Si ya tiene una inscripción no cancelada, salimos.
         Optional<Inscripcion> existente = inscripcionRepository
                 .findByUsuarioIdAndEventoId(organizadorId, eventoId);
         if (existente.isPresent() && existente.get().getEstado() != EstadoInscripcion.CANCELADO) {
             return toDto(existente.get());
         }
 
-        // Aforo no debe bloquear: el organizador es asistente principal por defecto.
-        // Aun así respetamos el cupo: si está lleno, no inscribimos pero tampoco fallamos.
         if (evento.getAforoActual() >= evento.getAforoMaximo()) {
             return null;
         }
@@ -129,7 +114,9 @@ public class InscripcionServiceImpl implements InscripcionService {
             ins = existente.get();
             ins.setEstado(EstadoInscripcion.INSCRITO);
             ins.setFechaInscripcion(LocalDateTime.now());
-            if (ins.getCodigoQR() == null) ins.setCodigoQR(generarCodigoQR());
+            if (ins.getCodigoQR() == null) {
+                ins.setCodigoQR(generarCodigoQR());
+            }
         } else {
             ins = new Inscripcion();
             ins.setUsuarioId(organizadorId);
@@ -141,17 +128,8 @@ public class InscripcionServiceImpl implements InscripcionService {
         return toDto(inscripcionRepository.save(ins));
     }
 
-    /**
-     * Inscripción centralizada con todas las reglas:
-     * - usuario debe estar ACTIVO (D4)
-     * - ADMIN no puede inscribirse como asistente (D5)
-     * - organizador del evento no se inscribe a su propio evento (D1)
-     * - STAFF asignado a este evento no puede inscribirse como asistente del mismo (D2)
-     * - autoInscripcion=false (carga del organizador): el evento puede ser PUBLICO o PRIVADO
-     * - autoInscripcion=true: el evento debe ser PUBLICO (D3)
-     * - el evento debe estar ACTIVO y con cupo disponible
-     */
     private InscripcionDTO inscribirInterno(Long usuarioId, Long eventoId, boolean autoInscripcion) {
+        // autoInscripcion=false en carga CSV: eventos privados por invitación sin pedir login público.
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("El evento no existe.", HttpStatus.NOT_FOUND));
         if (evento.getEstado() == EstadoEvento.CANCELADO) {
@@ -160,8 +138,10 @@ public class InscripcionServiceImpl implements InscripcionService {
         if (evento.getEstado() != EstadoEvento.ACTIVO) {
             throw new CustomException("No se puede inscribir a un evento que no está ACTIVO.", HttpStatus.BAD_REQUEST);
         }
+        // Público = el asistente se inscribe solo; privado = solo lista del organizador o CSV.
         if (autoInscripcion && evento.getTipoEvento() != TipoEvento.PUBLICO) {
-            throw new CustomException("La auto-inscripción solo está habilitada para eventos PÚBLICOS. Los eventos privados son por invitación.",
+            throw new CustomException(
+                    "La auto-inscripción solo está habilitada para eventos PÚBLICOS. Los eventos privados son por invitación.",
                     HttpStatus.FORBIDDEN);
         }
 
@@ -179,8 +159,7 @@ public class InscripcionServiceImpl implements InscripcionService {
             throw new CustomException("El organizador del evento no puede inscribirse como asistente de su propio evento.",
                     HttpStatus.FORBIDDEN);
         }
-        if (usuario.getRol() == Rol.STAFF
-                && staffEventoRepository.existsByStaffUsuarioIdAndEventoId(usuarioId, eventoId)) {
+        if (usuario.getRol() == Rol.STAFF && staffEventoService.existeAsignacion(usuarioId, eventoId)) {
             throw new CustomException("El STAFF asignado a este evento no puede inscribirse también como asistente.",
                     HttpStatus.FORBIDDEN);
         }
@@ -217,13 +196,12 @@ public class InscripcionServiceImpl implements InscripcionService {
         return toDto(inscripcionRepository.save(nueva));
     }
 
+    // Código único por inscripción; el staff lo escanea en puerta (sin guiones para que sea más corto).
     private String generarCodigoQR() {
-        // HU-007/HU-013/HU-015: identificador único universal del ticket.
         return UUID.randomUUID().toString().replace("-", "");
     }
 
     @Override
-    /** Ejecuta `cancelar` (lógica del servicio). */
     public InscripcionDTO cancelar(Long inscripcionId) {
         Inscripcion ins = buscarInscripcion(inscripcionId);
         if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
@@ -244,13 +222,13 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `checkIn` (lógica del servicio). */
     public InscripcionDTO checkIn(Long inscripcionId, Long staffUsuarioId) {
+        // Manual o vía QR: valido staff, ventana horaria y que no se pase del aforo con gente dentro.
         Inscripcion ins = buscarInscripcion(inscripcionId);
         Evento evento = eventoRepository.findById(ins.getEventoId())
                 .orElseThrow(() -> new CustomException("Evento no encontrado.", HttpStatus.NOT_FOUND));
-        validarStaffAsignado(staffUsuarioId, evento);
-        validarEventoActivoYEnFecha(evento, "registrar asistencia");
+        staffEventoService.validarStaffAsignado(staffUsuarioId, evento);
+        inscripcionValidator.validarEventoActivoYEnFecha(evento, "registrar asistencia");
 
         if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
             throw new CustomException("No se puede marcar asistencia en una inscripción cancelada.", HttpStatus.BAD_REQUEST);
@@ -261,7 +239,6 @@ public class InscripcionServiceImpl implements InscripcionService {
                             + ins.getFechaCheckIn().toLocalTime().withNano(0) + ".",
                     HttpStatus.BAD_REQUEST);
         }
-        // Aforo: si llegamos al máximo no se puede dar más check-in (HU-015 cond. 5).
         if (evento.getAforoActual() != 0 && evento.getAforoMaximo() > 0) {
             long presentes = inscripcionRepository.findByEventoId(evento.getId()).stream()
                     .filter(i -> i.getEstado() == EstadoInscripcion.ASISTIO && i.getFechaCheckOut() == null)
@@ -284,7 +261,6 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `checkInPorQR` (lógica del servicio). */
     public InscripcionDTO checkInPorQR(String codigoQR, Long staffUsuarioId, Long eventoId) {
         if (codigoQR == null || codigoQR.isBlank()) {
             throw new CustomException("Código QR vacío.", HttpStatus.BAD_REQUEST);
@@ -298,13 +274,13 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `checkOut` (lógica del servicio). */
     public InscripcionDTO checkOut(Long inscripcionId, Long staffUsuarioId) {
+        // Solo si ya hizo check-in; libero cupo “presente” para el aforo en vivo.
         Inscripcion ins = buscarInscripcion(inscripcionId);
         Evento evento = eventoRepository.findById(ins.getEventoId())
                 .orElseThrow(() -> new CustomException("Evento no encontrado.", HttpStatus.NOT_FOUND));
-        validarStaffAsignado(staffUsuarioId, evento);
-        validarEventoActivoYEnFecha(evento, "registrar salida");
+        staffEventoService.validarStaffAsignado(staffUsuarioId, evento);
+        inscripcionValidator.validarEventoActivoYEnFecha(evento, "registrar salida");
 
         if (ins.getEstado() != EstadoInscripcion.ASISTIO || ins.getFechaCheckIn() == null) {
             throw new CustomException("Solo se puede marcar salida si la asistencia fue confirmada.", HttpStatus.BAD_REQUEST);
@@ -327,7 +303,6 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `checkOutPorQR` (lógica del servicio). */
     public InscripcionDTO checkOutPorQR(String codigoQR, Long staffUsuarioId, Long eventoId) {
         if (codigoQR == null || codigoQR.isBlank()) {
             throw new CustomException("Código QR vacío.", HttpStatus.BAD_REQUEST);
@@ -342,31 +317,27 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPorEvento` (lógica del servicio). */
     public List<InscripcionDTO> listarPorEvento(Long eventoId) {
         return inscripcionRepository.findByEventoId(eventoId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarPorUsuario` (lógica del servicio). */
     public List<InscripcionDTO> listarPorUsuario(Long usuarioId) {
         return inscripcionRepository.findByUsuarioId(usuarioId).stream().map(this::toDto).toList();
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarAsistentesParaStaff` (lógica del servicio). */
     public List<AsistenteEventoDTO> listarAsistentesParaStaff(Long eventoId, Long staffUsuarioId, String busqueda) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
-        validarStaffAsignado(staffUsuarioId, evento);
+        staffEventoService.validarStaffAsignado(staffUsuarioId, evento);
         return obtenerAsistentes(evento, busqueda);
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarAsistentesParaOrganizador` (lógica del servicio). */
     public List<AsistenteEventoDTO> listarAsistentesParaOrganizador(Long eventoId, Long organizadorId, String busqueda) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
@@ -379,20 +350,39 @@ public class InscripcionServiceImpl implements InscripcionService {
     private List<AsistenteEventoDTO> obtenerAsistentes(Evento evento, String busqueda) {
         String filtro = busqueda == null ? null : busqueda.trim().toLowerCase(Locale.ROOT);
         List<Inscripcion> inscripciones = inscripcionRepository.findByEventoId(evento.getId());
+
+        List<Long> usuarioIds = inscripciones.stream()
+                .filter(ins -> ins.getEstado() != EstadoInscripcion.CANCELADO)
+                .map(Inscripcion::getUsuarioId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        Map<Long, Usuario> usuariosPorId = new HashMap<>();
+        if (!usuarioIds.isEmpty()) {
+            usuarioRepository.findAllById(usuarioIds)
+                    .forEach(u -> usuariosPorId.put(u.getId(), u));
+        }
+
         List<AsistenteEventoDTO> resultado = new ArrayList<>();
         for (Inscripcion ins : inscripciones) {
-            if (ins.getEstado() == EstadoInscripcion.CANCELADO) continue;
-            Usuario asistente = usuarioRepository.findById(ins.getUsuarioId()).orElse(null);
-            if (asistente == null) continue;
-            if (filtro != null && !filtro.isBlank() && !coincideFiltro(asistente, ins, filtro)) continue;
+            if (ins.getEstado() == EstadoInscripcion.CANCELADO) {
+                continue;
+            }
+            Usuario asistente = usuariosPorId.get(ins.getUsuarioId());
+            if (asistente == null) {
+                continue;
+            }
+            if (filtro != null && !filtro.isBlank() && !coincideFiltro(asistente, ins, filtro)) {
+                continue;
+            }
             resultado.add(toAsistenteDto(ins, asistente));
         }
         return resultado;
     }
 
+    // Pantalla del organizador: inscritos vs gente dentro (ASISTIO sin check-out).
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `consultarAforoEnVivo` (lógica del servicio). */
     public AforoEnVivoDTO consultarAforoEnVivo(Long eventoId) {
         Evento evento = eventoRepository.findById(eventoId)
                 .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
@@ -418,8 +408,8 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `cargarAsistentesManual` (lógica del servicio). */
     public ResultadoCargaAsistentesDTO cargarAsistentesManual(Long eventoId, Long organizadorId, List<FilaAsistenteCargaDTO> filas) {
+        // Por fila: creo usuario si no existe (pass = documento), inscribo y acumulo errores sin frenar todo el lote.
         if (filas == null || filas.isEmpty()) {
             throw new CustomException("Debe enviar al menos una fila de asistentes.", HttpStatus.BAD_REQUEST);
         }
@@ -455,160 +445,46 @@ public class InscripcionServiceImpl implements InscripcionService {
     }
 
     @Override
-    /** Ejecuta `cargarAsistentesCsv` (lógica del servicio). */
     public ResultadoCargaAsistentesDTO cargarAsistentesCsv(Long eventoId, Long organizadorId, String contenidoCsv) {
-        return cargarAsistentesManual(eventoId, organizadorId, parseCsv(contenidoCsv));
+        return cargarAsistentesManual(eventoId, organizadorId, asistenteCsvParser.parseCsv(contenidoCsv));
     }
 
     @Override
-    /** Ejecuta `asignarStaff` (lógica del servicio). */
     public void asignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion) {
-        Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
-        validarStaffPropio(organizadorId, staffUsuarioId);
-
-        FuncionStaff funcionFinal = funcion == null ? FuncionStaff.GENERAL : funcion;
-        StaffEventoAsignacion existente = staffEventoRepository
-                .findByStaffUsuarioIdAndEventoId(staffUsuarioId, eventoId)
-                .orElse(null);
-        if (existente != null) {
-            // Si ya estaba asignado, solo actualizamos su función.
-            if (existente.getFuncion() != funcionFinal) {
-                existente.setFuncion(funcionFinal);
-                staffEventoRepository.save(existente);
-                notificacionService.crear(staffUsuarioId,
-                        "Tu función en el evento \"" + evento.getNombre() + "\" cambió a: " + funcionFinal + ".",
-                        TipoNotificacion.INFO);
-            }
-            return;
-        }
-        staffEventoRepository.save(new StaffEventoAsignacion(staffUsuarioId, eventoId, funcionFinal));
-        notificacionService.crear(staffUsuarioId,
-                "Se te asignó al evento \"" + evento.getNombre() + "\" con la función: " + funcionFinal + ".",
-                TipoNotificacion.INFO);
+        staffEventoService.asignarStaff(eventoId, organizadorId, staffUsuarioId, funcion);
     }
 
     @Override
-    /** Ejecuta `cambiarFuncionStaff` (lógica del servicio). */
     public StaffAsignadoDTO cambiarFuncionStaff(Long eventoId, Long organizadorId, Long staffUsuarioId, FuncionStaff funcion) {
-        Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
-        StaffEventoAsignacion asignacion = staffEventoRepository
-                .findByStaffUsuarioIdAndEventoId(staffUsuarioId, eventoId)
-                .orElseThrow(() -> new CustomException("El staff no está asignado a este evento.", HttpStatus.NOT_FOUND));
-        FuncionStaff nueva = funcion == null ? FuncionStaff.GENERAL : funcion;
-        asignacion.setFuncion(nueva);
-        StaffEventoAsignacion guardada = staffEventoRepository.save(asignacion);
-        notificacionService.crear(staffUsuarioId,
-                "Tu función en el evento \"" + evento.getNombre() + "\" cambió a: " + nueva + ".",
-                TipoNotificacion.INFO);
-        Usuario staff = usuarioRepository.findById(staffUsuarioId).orElse(null);
-        return toStaffAsignadoDto(guardada, staff);
+        return staffEventoService.cambiarFuncionStaff(eventoId, organizadorId, staffUsuarioId, funcion);
     }
 
     @Override
-    /** Ejecuta `desasignarStaff` (lógica del servicio). */
     public void desasignarStaff(Long eventoId, Long organizadorId, Long staffUsuarioId) {
-        Evento evento = validarOrganizadorDeEvento(eventoId, organizadorId);
-        StaffEventoAsignacion asignacion = staffEventoRepository
-                .findByStaffUsuarioIdAndEventoId(staffUsuarioId, eventoId)
-                .orElseThrow(() -> new CustomException("El staff no está asignado a este evento.", HttpStatus.NOT_FOUND));
-        staffEventoRepository.delete(asignacion);
-        notificacionService.crear(staffUsuarioId,
-                "Fuiste removido del evento \"" + evento.getNombre() + "\".",
-                TipoNotificacion.ALERTA);
+        staffEventoService.desasignarStaff(eventoId, organizadorId, staffUsuarioId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarStaffIdsPorEvento` (lógica del servicio). */
     public List<Long> listarStaffIdsPorEvento(Long eventoId) {
-        return staffEventoRepository.findByEventoId(eventoId).stream()
-                .map(StaffEventoAsignacion::getStaffUsuarioId)
-                .toList();
+        return staffEventoService.listarStaffIdsPorEvento(eventoId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarStaffPorEvento` (lógica del servicio). */
     public List<StaffAsignadoDTO> listarStaffPorEvento(Long eventoId) {
-        return staffEventoRepository.findByEventoId(eventoId).stream()
-                .map(a -> {
-                    Usuario u = usuarioRepository.findById(a.getStaffUsuarioId()).orElse(null);
-                    return toStaffAsignadoDto(a, u);
-                })
-                .toList();
+        return staffEventoService.listarStaffPorEvento(eventoId);
     }
 
     @Override
     @Transactional(readOnly = true)
-    /** Ejecuta `listarEventosDelStaff` (lógica del servicio). */
     public List<EventoStaffDTO> listarEventosDelStaff(Long staffUsuarioId) {
-        return staffEventoRepository.findByStaffUsuarioId(staffUsuarioId).stream()
-                .map(a -> {
-                    Evento ev = eventoRepository.findById(a.getEventoId()).orElse(null);
-                    return toEventoStaffDto(a, ev);
-                })
-                .filter(d -> d != null)
-                .toList();
-    }
-
-    private EventoStaffDTO toEventoStaffDto(StaffEventoAsignacion a, Evento ev) {
-        if (ev == null) return null;
-        EventoStaffDTO dto = new EventoStaffDTO();
-        dto.setAsignacionId(a.getId());
-        dto.setEventoId(ev.getId());
-        dto.setNombreEvento(ev.getNombre());
-        dto.setDescripcion(ev.getDescripcion());
-        dto.setFechaEvento(ev.getFecha());
-        dto.setUbicacion(ev.getUbicacion());
-        dto.setTipoEvento(ev.getTipoEvento() != null ? ev.getTipoEvento().name() : null);
-        dto.setEstadoEvento(ev.getEstado() != null ? ev.getEstado().name() : null);
-        dto.setCategoria(ev.getCategoria());
-        dto.setAforoMaximo(ev.getAforoMaximo());
-        dto.setAforoActual(ev.getAforoActual());
-        dto.setOrganizadorId(ev.getOrganizadorId());
-        dto.setFuncion(a.getFuncion() == null ? FuncionStaff.GENERAL.name() : a.getFuncion().name());
-        return dto;
-    }
-
-    private Evento validarOrganizadorDeEvento(Long eventoId, Long organizadorId) {
-        Evento evento = eventoRepository.findById(eventoId)
-                .orElseThrow(() -> new CustomException("No se encontró el evento con ID: " + eventoId, HttpStatus.NOT_FOUND));
-        if (organizadorId == null || !organizadorId.equals(evento.getOrganizadorId())) {
-            throw new CustomException("Solo el organizador del evento puede gestionar su staff.", HttpStatus.FORBIDDEN);
-        }
-        return evento;
-    }
-
-    private void validarStaffPropio(Long organizadorId, Long staffUsuarioId) {
-        Usuario staff = usuarioRepository.findById(staffUsuarioId)
-                .orElseThrow(() -> new CustomException("Usuario staff no encontrado: " + staffUsuarioId, HttpStatus.NOT_FOUND));
-        if (staff.getRol() != Rol.STAFF) {
-            throw new CustomException("El usuario debe tener rol STAFF.", HttpStatus.FORBIDDEN);
-        }
-        if (!organizadorId.equals(staff.getOrganizadorId())) {
-            throw new CustomException("El STAFF debe haber sido creado por el mismo organizador.", HttpStatus.FORBIDDEN);
-        }
-        if (staff.getEstado() != Estado.ACTIVO) {
-            throw new CustomException("El STAFF no está ACTIVO. Estado actual: " + staff.getEstado() + ".", HttpStatus.FORBIDDEN);
-        }
-    }
-
-    private StaffAsignadoDTO toStaffAsignadoDto(StaffEventoAsignacion a, Usuario u) {
-        StaffAsignadoDTO dto = new StaffAsignadoDTO();
-        dto.setAsignacionId(a.getId());
-        dto.setStaffUsuarioId(a.getStaffUsuarioId());
-        dto.setFuncion(a.getFuncion() == null ? FuncionStaff.GENERAL.name() : a.getFuncion().name());
-        if (u != null) {
-            dto.setNombre(u.getNombre());
-            dto.setEmail(u.getEmail());
-            dto.setTelefono(u.getTelefono());
-            dto.setEstadoUsuario(u.getEstado() != null ? u.getEstado().name() : null);
-        }
-        return dto;
+        return staffEventoService.listarEventosDelStaff(staffUsuarioId);
     }
 
     private void procesarFila(Evento evento, FilaAsistenteCargaDTO fila,
                               ResultadoCargaAsistentesDTO res, Set<String> emailsLote) {
+        // emailsLote evita duplicados en el mismo CSV en una sola subida.
         validarCamposMinimos(fila);
         String emailNorm = fila.getEmail().trim().toLowerCase(Locale.ROOT);
         if (!emailNorm.matches(EMAIL_REGEX)) {
@@ -623,7 +499,6 @@ public class InscripcionServiceImpl implements InscripcionService {
 
         if (existente.isPresent()) {
             Usuario u = existente.get();
-            // Cualquier rol activo (excepto ADMIN) puede ser invitado. ADMIN se bloquea ya en inscribirInterno.
             if (u.getEstado() != Estado.ACTIVO) {
                 throw new IllegalStateException("El correo pertenece a una cuenta no ACTIVA (estado: " + u.getEstado() + ").");
             }
@@ -636,6 +511,7 @@ public class InscripcionServiceImpl implements InscripcionService {
             return;
         }
 
+        // Cuenta nueva: contraseña inicial = número de documento (así entran sin correo de bienvenida externo).
         Usuario nuevo = new Usuario();
         nuevo.setNombre(fila.getNombre().trim());
         nuevo.setEmail(emailNorm);
@@ -656,7 +532,6 @@ public class InscripcionServiceImpl implements InscripcionService {
 
     private void inscribirEnCarga(ResultadoCargaAsistentesDTO res, Long usuarioId, Evento evento, boolean yaNotificadoAlta) {
         try {
-            // Carga = invitación del organizador, no auto-inscripción → admite eventos PRIVADOS también.
             inscribirInterno(usuarioId, evento.getId(), false);
             res.setInscripcionesRegistradas(res.getInscripcionesRegistradas() + 1);
             if (!yaNotificadoAlta) {
@@ -692,133 +567,7 @@ public class InscripcionServiceImpl implements InscripcionService {
         return s == null || s.isBlank() ? null : s.trim();
     }
 
-    static List<FilaAsistenteCargaDTO> parseCsv(String contenidoCsv) {
-        if (contenidoCsv == null || contenidoCsv.isBlank()) {
-            throw new IllegalArgumentException("El archivo CSV está vacío.");
-        }
-        String texto = contenidoCsv.charAt(0) == '\uFEFF' ? contenidoCsv.substring(1) : contenidoCsv;
-        String[] lineas = texto.split("\\r?\\n");
-        List<FilaAsistenteCargaDTO> filas = new ArrayList<>();
-
-        Integer idxNombre = null, idxEmail = null, idxTel = null, idxTipoDoc = null, idxNumDoc = null;
-        boolean hayCabecera = false;
-
-        for (String rawLinea : lineas) {
-            String linea = rawLinea.trim();
-            if (linea.isEmpty()) continue;
-            String[] partes = linea.split("\\s*,\\s*", -1);
-            if (!hayCabecera && esCabecera(partes)) {
-                idxNombre = indiceColumna(partes, "nombre");
-                idxEmail = indiceColumna(partes, "email", "correo");
-                idxTel = indiceColumna(partes, "telefono", "teléfono", "tel");
-                idxTipoDoc = indiceColumna(partes, "tipodocumento", "tipo documento", "tipo_documento");
-                idxNumDoc = indiceColumna(partes, "numerodocumento", "numero documento", "numero_documento", "documento");
-                if (idxNombre == null || idxEmail == null || idxTipoDoc == null || idxNumDoc == null) {
-                    throw new IllegalArgumentException("CSV con cabecera: se requieren columnas nombre, email, tipo de documento y número de documento.");
-                }
-                hayCabecera = true;
-                continue;
-            }
-            FilaAsistenteCargaDTO f = new FilaAsistenteCargaDTO();
-            if (hayCabecera) {
-                f.setNombre(getCelda(partes, idxNombre));
-                f.setEmail(getCelda(partes, idxEmail));
-                if (idxTel != null) f.setTelefono(getCelda(partes, idxTel));
-                f.setTipoDocumento(getCelda(partes, idxTipoDoc));
-                f.setNumeroDocumento(getCelda(partes, idxNumDoc));
-            } else {
-                if (partes.length < 5) {
-                    throw new IllegalArgumentException("Sin cabecera use 5 columnas: nombre,email,telefono,tipoDocumento,numeroDocumento");
-                }
-                f.setNombre(partes[0]);
-                f.setEmail(partes[1]);
-                f.setTelefono(partes[2]);
-                f.setTipoDocumento(partes[3]);
-                f.setNumeroDocumento(partes[4]);
-            }
-            filas.add(f);
-        }
-        if (filas.isEmpty()) {
-            throw new IllegalArgumentException("No se encontraron filas de datos en el CSV.");
-        }
-        return filas;
-    }
-
-    private static String getCelda(String[] partes, int idx) {
-        if (idx < 0 || idx >= partes.length) return "";
-        return partes[idx].trim();
-    }
-
-    private static boolean esCabecera(String[] partes) {
-        String uno = String.join(",", partes).toLowerCase(Locale.ROOT);
-        return uno.contains("email") && uno.contains("nombre");
-    }
-
-    private static String normCol(String raw) {
-        return raw.trim().replace("\"", "").toLowerCase(Locale.ROOT).replaceAll("[\\s_]+", "");
-    }
-
-    private static Integer indiceColumna(String[] partes, String... titulos) {
-        for (int i = 0; i < partes.length; i++) {
-            String c = normCol(partes[i]);
-            for (String t : titulos) {
-                if (c.equals(normCol(t))) return i;
-            }
-        }
-        return null;
-    }
-
-    private void validarStaffAsignado(Long staffUsuarioId, Evento evento) {
-        Usuario staff = usuarioRepository.findById(staffUsuarioId)
-                .orElseThrow(() -> new CustomException("Usuario no encontrado: " + staffUsuarioId, HttpStatus.NOT_FOUND));
-        if (staff.getRol() != Rol.STAFF || staff.getOrganizadorId() == null) {
-            throw new CustomException("La operación solo la puede ejecutar usuario STAFF.", HttpStatus.FORBIDDEN);
-        }
-        if (!staff.getOrganizadorId().equals(evento.getOrganizadorId())) {
-            throw new CustomException("El staff no pertenece al organizador del evento.", HttpStatus.FORBIDDEN);
-        }
-        if (!staffEventoRepository.existsByStaffUsuarioIdAndEventoId(staffUsuarioId, evento.getId())) {
-            throw new CustomException("El staff no está asignado a este evento.", HttpStatus.FORBIDDEN);
-        }
-    }
-
-    /**
-     * Check-in/out (QR o manual) solo dentro de la ventana horaria del evento
-     * (desde inicio hasta fin), en la zona horaria configurada del negocio.
-     */
-    private void validarEventoActivoYEnFecha(Evento evento, String accion) {
-        if (evento.getEstado() != EstadoEvento.ACTIVO) {
-            throw new CustomException(
-                    "El evento no está activo. Solo se puede " + accion + " en eventos activos.",
-                    HttpStatus.BAD_REQUEST);
-        }
-        if (evento.getFecha() == null) {
-            throw new CustomException("El evento no tiene fecha definida.", HttpStatus.BAD_REQUEST);
-        }
-        ZoneId zone = EventoVentanaUtil.zoneId(zonaHorariaEventos);
-        ZonedDateTime ahora = ZonedDateTime.now(zone);
-        ZonedDateTime inicio = EventoVentanaUtil.instanteInicioZoned(evento, zone);
-        ZonedDateTime fin = EventoVentanaUtil.instanteFinZoned(evento, zone);
-        if (ahora.isBefore(inicio)) {
-            throw new CustomException(
-                    "Solo se puede " + accion + " a partir del inicio del evento ("
-                            + inicio.format(FMT_VENTANA)
-                            + "). Aún no ha comenzado la ventana horaria.",
-                    HttpStatus.BAD_REQUEST);
-        }
-        if (ahora.isAfter(fin)) {
-            throw new CustomException(
-                    "No se puede " + accion + ": el evento ya finalizó. La ventana terminó el "
-                            + fin.format(FMT_VENTANA)
-                            + ".",
-                    HttpStatus.BAD_REQUEST);
-        }
-    }
-
-    /**
-     * Coincidencia por texto: nombre (puede incluir apellidos), email, documento, teléfono, tipo doc. o código QR.
-     * Si el criterio tiene varias palabras, todas deben aparecer en algún campo (búsqueda tipo “nombre apellido”).
-     */
+    // Búsqueda del staff: cada palabra del filtro debe aparecer en nombre, email, doc o QR.
     private static boolean coincideFiltro(Usuario u, Inscripcion ins, String filtro) {
         String hay = construirTextoBusquedaAsistente(u, ins);
         if (hay.isEmpty()) {
@@ -867,7 +616,6 @@ public class InscripcionServiceImpl implements InscripcionService {
         return modelMapper.map(ins, InscripcionDTO.class);
     }
 
-    /** Añade nombre, documento y datos del evento para pantallas de staff (check-in/out). */
     private void enriquecerDatosCheckInEnDto(InscripcionDTO dto, Long usuarioId, Long eventoId) {
         usuarioRepository.findById(usuarioId).ifPresent(u -> {
             dto.setNombreAsistente(u.getNombre());

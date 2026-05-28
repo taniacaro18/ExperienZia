@@ -5,22 +5,18 @@ import com.experienzia.entity.TipoNotificacion;
 
 import java.util.List;
 
-/**
- * Interfaz del servicio de notificaciones.
- * Permite avisar a los usuarios dentro de la app (mensajes en el panel de notificaciones).
- */
-/**
- * Interfaz del servicio NotificacionService.
- * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
- */
+// Avisos dentro de la app: creo en BD y el front los muestra en la campanita
 public interface NotificacionService {
 
-    /** Crea una notificación nueva para un usuario (mensaje + tipo INFO, ALERTA, etc.). */
+    // Creo notificación para un usuario (mensaje + tipo INFO, ALERTA...)
     NotificacionDTO crear(Long usuarioId, String mensaje, TipoNotificacion tipo);
 
-    /** Devuelve las notificaciones de un usuario, ordenadas por fecha. */
+    // Bandeja del usuario, más recientes primero
     List<NotificacionDTO> listarPorUsuario(Long usuarioId);
 
-    /** Marca una notificación como leída cuando el usuario la abre. */
+    // Cuando la abre en el front la marco leída en la BD
     NotificacionDTO marcarLeida(Long id);
+
+    // Aviso a todos los admins activos (evento nuevo, pago subido, revisión pendiente...)
+    void notificarAdministradores(String mensaje, TipoNotificacion tipo);
 }

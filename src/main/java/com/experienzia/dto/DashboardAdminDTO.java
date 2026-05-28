@@ -4,11 +4,12 @@ import java.util.List;
 
 import lombok.Data;
 
-
+// Payload del dashboard admin — agrego contadores de toda la plataforma y series mensuales.
 @Data
 
 public class DashboardAdminDTO {
 
+    // Eventos por estado
     private long eventosActivos;
 
     private long eventosPendientes;
@@ -17,6 +18,7 @@ public class DashboardAdminDTO {
 
     private long eventosTotales;
 
+    // Usuarios y roles
     private long usuariosTotales;
 
     private long usuariosActivos;
@@ -31,6 +33,7 @@ public class DashboardAdminDTO {
 
     private long inscripcionesTotales;
 
+    // Puntos mensuales para Chart.js o lo que use el front
     private List<PuntoSerieDTO> serieMensualEventos;
     
     private List<PuntoSerieDTO> serieMensualUsuarios;

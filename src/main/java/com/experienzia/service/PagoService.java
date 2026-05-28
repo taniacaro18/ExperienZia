@@ -6,38 +6,27 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Optional;
 
-/**
- * Interfaz del servicio de pagos de eventos.
- * El organizador paga la tarifa de la plataforma para activar su evento;
- * el administrador aprueba o rechaza el comprobante.
- */
-/**
- * Interfaz del servicio PagoService.
- * Define qué operaciones puede hacer el backend; la clase *Impl las programa.
- */
+// Pagos de tarifa de plataforma: organizador sube comprobante, admin aprueba y activa evento
 public interface PagoService {
 
-    /**
-     * El organizador sube el comprobante de pago de la tarifa del evento.
-     * El monto se calcula solo desde el costo del evento (horas × precio por hora).
-     */
+    // Organizador sube comprobante; calculo monto desde horas del evento y guardo en la BD
     PagoDTO registrar(Long eventoId, Long organizadorId, MultipartFile archivo, String direccionIp);
 
-    /** El admin aprueba el pago; eso puede activar el evento e inscribir al organizador. */
+    // Admin aprueba: puede activar evento e inscribir al organizador
     PagoDTO aprobar(Long pagoId, Long aprobadorId, String direccionIp);
 
-    /** El admin rechaza el pago y debe indicar el motivo. */
+    // Admin rechaza con motivo para el front del organizador
     PagoDTO rechazar(Long pagoId, String motivo, Long aprobadorId, String direccionIp);
 
-    /** Lista pagos que están esperando revisión del admin. */
+    // Cola de pagos PENDIENTE para el panel admin
     List<PagoDTO> listarPendientes();
 
-    /** Lista todos los pagos del sistema. */
+    // Todos los pagos (admin)
     List<PagoDTO> listarTodos();
 
-    /** Lista los pagos hechos por un organizador concreto. */
+    // Historial de un organizador
     List<PagoDTO> listarPorOrganizador(Long organizadorId);
 
-    /** Busca si ya hay un pago asociado a un evento (puede no existir). */
+    // ¿Ya hay pago de este evento? (puede no existir)
     Optional<PagoDTO> obtenerPorEvento(Long eventoId);
 }
