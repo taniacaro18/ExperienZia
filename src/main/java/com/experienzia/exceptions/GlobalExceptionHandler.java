@@ -8,11 +8,11 @@ import org.springframework.transaction.UnexpectedRollbackException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-// Atrapa errores de toda la API y devuelve texto plano al front (sin stack trace feo)
+// Atrapa errores de toda la API y devuelve texto plano al front
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-	// Mis errores de negocio (CustomException) salen con el status que yo puse (400, 403, etc.)
+	// Mis errores de negocio (CustomException) salen con el status que yo puse
 	@ExceptionHandler(CustomException.class)
 	public ResponseEntity<String> handleCustom(CustomException ex) {
 		return ResponseEntity.status(ex.getStatus()).body(ex.getMessage());

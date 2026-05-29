@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 
-// Plata, suplementos y comprobantes cuando el organizador edita horas o tarifa del evento.
+// comprobantes cuando el organizador edita horas o tarifa del evento.
 @Component
 public class EventoFinanzasHelper {
 

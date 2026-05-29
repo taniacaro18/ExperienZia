@@ -12,18 +12,18 @@ import com.experienzia.entity.Rol;
 import com.experienzia.entity.Usuario;
 import com.experienzia.repository.UsuarioRepository;
 
-// Yo levanto acá todo el backend de ExperienZia cuando corro el main
+
 @SpringBootApplication 
-// Activo el cron que finaliza eventos vencidos (EventoFinalizacionScheduler)
+
 @EnableScheduling 
 public class Application {
 
-	// Arranco el servidor Spring desde acá
+	// se arranca el servidor Spring desde acá
 	public static void main(String[] args) {
 		SpringApplication.run(Application.class, args);
 	}
 
-	// Si en la BD no hay admin, me invento uno para poder entrar la primera vez
+
 	@Bean 
 	CommandLineRunner inicializarAdmin(UsuarioRepository usuarioRepository,
 			PasswordEncoder passwordEncoder) {
@@ -48,7 +48,7 @@ public class Application {
 
 				usuarioRepository.save(admin);
 
-				// Ojo: admin123 es solo dev; en prod habría que cambiar la clave ya
+
 				System.out.println("Administrador creado. Credenciales -> "
 						+ emailAdmin + " / admin123");
 			} else {

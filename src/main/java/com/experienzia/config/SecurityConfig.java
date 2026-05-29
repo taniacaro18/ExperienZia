@@ -24,7 +24,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.experienzia.security.JwtAuthenticationFilter;
 
-// Yo defino quién entra sin token y quién necesita JWT (debe cuadrar con SecurityPaths)
+// se define  quién entra sin token y quién necesita JWT (debe cuadrar con SecurityPaths)
 @Configuration
 @EnableWebSecurity 
 public class SecurityConfig {

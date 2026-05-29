@@ -31,7 +31,7 @@ public class PostgresEventoEstadoCheckFix implements ApplicationRunner {
 			return;
 		}
 		String url = environment.getProperty("spring.datasource.url", "");
-		// En H2 de tests no corro esto
+
 		if (!url.contains("jdbc:postgresql")) {
 			return;
 		}

@@ -14,7 +14,7 @@ public class JacksonConfig {
 	@Primary 
 	public ObjectMapper objectMapper() {
 		ObjectMapper mapper = new ObjectMapper();
-		// Sin esto LocalDateTime a veces sale feo en el JSON del front
+		// Sin esto LocalDateTime a veces sale mal en el JSON del front
 		mapper.findAndRegisterModules();
 		return mapper;
 	}
